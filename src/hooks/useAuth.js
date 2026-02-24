@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+const baseHeaders = () => ({ 'bypass-tunnel-reminder': 'true' });
 const TOKEN_KEY = 'onefine_admin_token';
 
 export function useAuth() {
@@ -16,7 +17,7 @@ export function useAuth() {
         try {
             const res = await fetch(`${API_BASE}/api/auth/login`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { ...baseHeaders(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password }),
             });
             const data = await res.json();

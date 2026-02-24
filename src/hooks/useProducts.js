@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+// Bypass localtunnel's guard page for programmatic requests
+const baseHeaders = () => ({ 'bypass-tunnel-reminder': 'true' });
 
 const defaultProducts = [
   {
@@ -39,7 +41,7 @@ export function useProducts() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/products`);
+      const res = await fetch(`${API_BASE}/api/products`, { headers: baseHeaders() });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setProducts(data.length > 0 ? data : defaultProducts);
@@ -61,6 +63,7 @@ export function useProducts() {
     const res = await fetch(`${API_BASE}/api/products`, {
       method: 'POST',
       headers: {
+        ...baseHeaders(),
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
@@ -80,6 +83,7 @@ export function useProducts() {
     const res = await fetch(`${API_BASE}/api/products/${id}`, {
       method: 'PUT',
       headers: {
+        ...baseHeaders(),
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
@@ -98,7 +102,7 @@ export function useProducts() {
   const deleteProduct = useCallback(async (id, token) => {
     const res = await fetch(`${API_BASE}/api/products/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
       const err = await res.json();
@@ -113,7 +117,7 @@ export function useProducts() {
     formData.append('image', file);
     const res = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
       body: formData,
     });
     if (!res.ok) throw new Error('Upload failed');
