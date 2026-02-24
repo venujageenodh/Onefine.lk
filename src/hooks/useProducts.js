@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 const defaultProducts = [
   {
     _id: 'default-1',
@@ -37,7 +39,7 @@ export function useProducts() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/products');
+      const res = await fetch(`${API_BASE}/api/products`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setProducts(data.length > 0 ? data : defaultProducts);
@@ -56,7 +58,7 @@ export function useProducts() {
 
   // Add product (requires auth token)
   const addProduct = useCallback(async ({ name, price, rating = 5, image }, token) => {
-    const res = await fetch('/api/products', {
+    const res = await fetch(`${API_BASE}/api/products`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -75,7 +77,7 @@ export function useProducts() {
 
   // Update product (requires auth token)
   const updateProduct = useCallback(async (id, updates, token) => {
-    const res = await fetch(`/api/products/${id}`, {
+    const res = await fetch(`${API_BASE}/api/products/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -94,7 +96,7 @@ export function useProducts() {
 
   // Delete product (requires auth token)
   const deleteProduct = useCallback(async (id, token) => {
-    const res = await fetch(`/api/products/${id}`, {
+    const res = await fetch(`${API_BASE}/api/products/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -109,7 +111,7 @@ export function useProducts() {
   const uploadImage = useCallback(async (file, token) => {
     const formData = new FormData();
     formData.append('image', file);
-    const res = await fetch('/api/upload', {
+    const res = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: formData,

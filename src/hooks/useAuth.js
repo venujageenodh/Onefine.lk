@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
 const TOKEN_KEY = 'onefine_admin_token';
 
 export function useAuth() {
@@ -13,7 +14,7 @@ export function useAuth() {
         setError('');
         setLoading(true);
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await fetch(`${API_BASE}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password }),

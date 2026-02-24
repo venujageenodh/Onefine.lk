@@ -61,7 +61,14 @@ async function seedDefaults() {
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: ['http://localhost:5173', 'https://venujageenodh.github.io'] }));
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://venujageenodh.github.io',
+    /\.loca\.lt$/,
+  ],
+}));
 app.use(express.json());
 
 // ── File Upload Setup ─────────────────────────────────────────────────────────
