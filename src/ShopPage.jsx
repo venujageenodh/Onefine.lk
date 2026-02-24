@@ -79,35 +79,60 @@ export default function ShopPage() {
               </p>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((product) => (
-                  <article
-                    key={product.id}
-                    className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
-                  >
-                    <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl">
-                      {product.image && (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
-                        />
-                      )}
-                    </div>
-                    <div className="flex flex-1 flex-col gap-3 p-4">
-                      <div className="space-y-1">
-                        <h2 className="font-medium text-sm text-navy">{product.name}</h2>
-                        <p className="text-sm font-semibold text-navy">{product.price}</p>
+                {products.map((product) => {
+                  const isLuxgear =
+                    product.name && product.name.toLowerCase().includes('luxgear bottle');
+
+                  return (
+                    <article
+                      key={product.id}
+                      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
+                    >
+                      <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl">
+                        {product.image && (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                          />
+                        )}
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <RatingStars value={product.rating ?? 5} />
-                        <span>Made to order</span>
+                      <div className="flex flex-1 flex-col gap-3 p-4">
+                        <div className="space-y-1">
+                          <h2 className="font-medium text-sm text-navy">
+                            {isLuxgear ? (
+                              <a
+                                href="/shop/luxgear-bottles"
+                                className="hover:text-gold transition-colors"
+                              >
+                                {product.name}
+                              </a>
+                            ) : (
+                              product.name
+                            )}
+                          </h2>
+                          <p className="text-sm font-semibold text-navy">{product.price}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <RatingStars value={product.rating ?? 5} />
+                          <span>Made to order</span>
+                        </div>
+                        {isLuxgear ? (
+                          <a
+                            href="/shop/luxgear-bottles"
+                            className="mt-2 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
+                          >
+                            View LUXGEAR Brands
+                          </a>
+                        ) : (
+                          <button className="mt-2 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5">
+                            Request Quote
+                          </button>
+                        )}
                       </div>
-                      <button className="mt-2 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5">
-                        Request Quote
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
