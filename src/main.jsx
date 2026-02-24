@@ -9,11 +9,11 @@ import './index.css';
 const path = window.location.pathname;
 
 let RootComponent = App;
-if (path.startsWith('/admin')) {
+if (path.includes('/admin')) {
   RootComponent = AdminDashboard;
-} else if (path.startsWith('/shop/luxgear-bottles')) {
+} else if (path.includes('/shop/luxgear-bottles')) {
   RootComponent = LuxgearCategoryPage;
-} else if (path.startsWith('/shop')) {
+} else if (path.includes('/shop')) {
   RootComponent = ShopPage;
 }
 
