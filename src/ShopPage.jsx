@@ -85,7 +85,7 @@ export default function ShopPage() {
 
                   return (
                     <article
-                      key={product.id}
+                      key={product._id}
                       className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
                     >
                       <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl">

@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+server/.env
+
+# Uploads (local)
+uploads/
+
+# Editor
+.vscode/
+*.local
