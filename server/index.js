@@ -1,3 +1,8 @@
+// Override system DNS to use Google/Cloudflare — fixes ECONNREFUSED on querySrv
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+
 require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
