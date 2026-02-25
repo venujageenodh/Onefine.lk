@@ -3,6 +3,16 @@ import { useProducts } from './hooks/useProducts';
 import { useAuth } from './hooks/useAuth';
 import logo from './assets/onefine-logo.png';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+// Resolve image URL — handles both absolute URLs and relative /uploads/ paths
+function resolveImageUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // relative path like /uploads/filename
+  return `${API_BASE}${url}`;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatPrice(numericString) {
   const cleaned = numericString.replace(/[^\d]/g, '');
@@ -57,6 +67,7 @@ function LoginScreen({ onLogin }) {
                 placeholder="••••••••"
                 autoFocus
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors"
+                autoComplete="current-password"
               />
             </div>
 
@@ -180,8 +191,8 @@ export default function AdminDashboard() {
       {toast && (
         <div
           className={`fixed top-4 right-4 z-50 rounded-xl px-4 py-2.5 text-sm font-medium shadow-soft transition-all ${toast.type === 'error'
-              ? 'bg-red-500 text-white'
-              : 'bg-navy text-white'
+            ? 'bg-red-500 text-white'
+            : 'bg-navy text-white'
             }`}
         >
           {toast.msg}
@@ -268,7 +279,7 @@ export default function AdminDashboard() {
                 />
                 {form.image && (
                   <div className="mt-3 h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                    <img src={form.image} alt="Preview" className="h-full w-full object-cover" />
+                    <img src={resolveImageUrl(form.image)} alt="Preview" className="h-full w-full object-cover" />
                   </div>
                 )}
                 {isUploading && (
@@ -325,7 +336,7 @@ export default function AdminDashboard() {
                     <div className="h-32 w-full overflow-hidden bg-slate-100">
                       {product.image && (
                         <img
-                          src={product.image}
+                          src={resolveImageUrl(product.image)}
                           alt={product.name}
                           className="h-full w-full object-cover"
                         />

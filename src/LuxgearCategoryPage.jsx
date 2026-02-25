@@ -4,6 +4,13 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { useProducts } from './hooks/useProducts';
 import logo from './assets/onefine-logo.png';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+function resolveImageUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE}${url}`;
+}
+
 function RatingStars({ value }) {
   return (
     <div className="flex items-center gap-1 text-gold text-sm">
@@ -102,7 +109,7 @@ export default function LuxgearCategoryPage() {
                   <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl flex items-center justify-center">
                     {item.image ? (
                       <img
-                        src={item.image}
+                        src={resolveImageUrl(item.image)}
                         alt={item.name}
                         className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
                       />

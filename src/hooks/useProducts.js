@@ -10,24 +10,21 @@ const defaultProducts = [
     name: 'Custom Name Insulated Bottle',
     price: 'Rs. 4,950',
     rating: 5,
-    image:
-      'https://images.pexels.com/photos/3259629/pexels-photo-3259629.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
   },
   {
     _id: 'default-2',
     name: 'Executive Corporate Gift Set',
     price: 'Rs. 12,500',
     rating: 5,
-    image:
-      'https://images.pexels.com/photos/4065405/pexels-photo-4065405.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop&q=80',
   },
   {
     _id: 'default-3',
     name: 'Premium Desk Essentials Kit',
     price: 'Rs. 9,900',
     rating: 5,
-    image:
-      'https://images.pexels.com/photos/3787321/pexels-photo-3787321.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&auto=format&fit=crop&q=80',
   },
 ];
 

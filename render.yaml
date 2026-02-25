@@ -1,0 +1,17 @@
+# render.yaml — Render.com deployment config for OneFine backend
+services:
+  - type: web
+    name: onefine-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # Set these in Render dashboard → Environment:
+      # MONGODB_URI   → your MongoDB Atlas connection string
+      # JWT_SECRET    → your secret key
+      # ADMIN_PASSWORD → your admin password

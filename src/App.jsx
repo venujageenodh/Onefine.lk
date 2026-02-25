@@ -9,6 +9,13 @@ import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/
 import { useProducts } from './hooks/useProducts';
 import logo from './assets/onefine-logo.png';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+function resolveImageUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE}${url}`;
+}
+
 const companies = ['OnePay', 'BluePeak', 'CeylonTech', 'LankaBank', 'GlobalWave'];
 
 function RatingStars({ value }) {
@@ -194,7 +201,7 @@ export default function App() {
                 >
                   <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl">
                     <img
-                      src={product.image}
+                      src={resolveImageUrl(product.image)}
                       alt={product.name}
                       className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
                     />
