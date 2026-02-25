@@ -12,17 +12,17 @@ const BRANDS = [
   },
   {
     name: 'Nissan',
-    image: 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&auto=format&fit=crop&q=80',
     color: '#C3002F',
   },
   {
     name: 'BMW',
-    image: 'https://images.unsplash.com/photo-1553530666-ba11a90a3dfd?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600&auto=format&fit=crop&q=80',
     color: '#1C69D4',
   },
   {
     name: 'Mercedes',
-    image: 'https://images.unsplash.com/photo-1610824352934-c10d87b700cc?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&auto=format&fit=crop&q=80',
     color: '#2D2D2D',
   },
   {
