@@ -104,7 +104,7 @@ export default function AdminDashboard() {
     useProducts();
 
   // Detect if we're showing fallback/demo data (server offline)
-  const isOffline = products.length > 0 && products[0]._id?.startsWith('default-');
+  const isOffline = Boolean(productsError);
 
   const [form, setForm] = React.useState({ name: '', price: '', image: '' });
   const [editingId, setEditingId] = React.useState(null);
