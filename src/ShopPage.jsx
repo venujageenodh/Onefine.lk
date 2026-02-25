@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { HiOutlineSearch, HiOutlineShoppingBag, HiStar, HiOutlineStar } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useProducts } from './hooks/useProducts';
@@ -23,6 +23,13 @@ function RatingStars({ value }) {
 
 export default function ShopPage() {
   const { products } = useProducts();
+  const [query, setQuery] = useState('');
+
+  const filteredProducts = useMemo(() => {
+    if (!query) return products;
+    const q = query.trim().toLowerCase();
+    return products.filter((p) => (p.name || '').toLowerCase().includes(q));
+  }, [products, query]);
 
   return (
     <div className="min-h-screen bg-white text-navy">
@@ -85,8 +92,26 @@ export default function ShopPage() {
                 No products available yet. Add items from the admin dashboard.
               </p>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {products.map((product) => {
+              <>
+                <div className="mb-6">
+                  <label htmlFor="search" className="sr-only">Search products</label>
+                  <div className="relative max-w-md">
+                    <input
+                      id="search"
+                      type="search"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search products by name..."
+                      className="w-full rounded-full border border-slate-200 px-4 py-2 pl-10 text-sm placeholder:text-slate-400 focus:border-navy focus:ring-1 focus:ring-navy"
+                    />
+                    <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                      <HiOutlineSearch className="text-lg" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredProducts.map((product) => {
                   const isLuxgear =
                     product.name && product.name.toLowerCase().includes('luxgear bottle');
 
