@@ -100,8 +100,11 @@ function LoginScreen({ onLogin }) {
 // ── Admin Dashboard ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const auth = useAuth();
-  const { products, loading: productsLoading, addProduct, updateProduct, deleteProduct, uploadImage } =
+  const { products, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, uploadImage } =
     useProducts();
+
+  // Detect if we're showing fallback/demo data (server offline)
+  const isOffline = products.length > 0 && products[0]._id?.startsWith('default-');
 
   const [form, setForm] = React.useState({ name: '', price: '', image: '' });
   const [editingId, setEditingId] = React.useState(null);
@@ -320,6 +323,13 @@ export default function AdminDashboard() {
               </span>
             </div>
 
+            {/* Server offline notice */}
+            {isOffline && (
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                ⚠️ Backend server offline — showing demo products. Start the server to manage products.
+              </div>
+            )}
+
             {productsLoading ? (
               <p className="text-sm text-slate-500">Loading products…</p>
             ) : products.length === 0 ? (
@@ -345,22 +355,24 @@ export default function AdminDashboard() {
                     <div className="flex flex-1 flex-col gap-1 p-3">
                       <h3 className="text-sm font-semibold text-navy">{product.name}</h3>
                       <p className="text-xs text-slate-600">{product.price}</p>
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(product)}
-                          className="inline-flex items-center justify-center rounded-full border border-slate-300 px-3 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(product._id)}
-                          className="inline-flex items-center justify-center rounded-full border border-red-200 px-3 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
+                      {!isOffline && (
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(product)}
+                            className="inline-flex items-center justify-center rounded-full border border-slate-300 px-3 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(product._id)}
+                            className="inline-flex items-center justify-center rounded-full border border-red-200 px-3 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </article>
                 ))}
