@@ -11,7 +11,7 @@ const path = window.location.pathname;
 let RootComponent = App;
 if (path.includes('/admin')) {
   RootComponent = AdminDashboard;
-} else if (path.includes('/shop/luxgear-bottles')) {
+} else if (path.includes('/luxgear-bottles')) {
   RootComponent = LuxgearCategoryPage;
 } else if (path.includes('/shop')) {
   RootComponent = ShopPage;
