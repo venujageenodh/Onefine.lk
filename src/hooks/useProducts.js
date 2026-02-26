@@ -33,12 +33,18 @@ export function useProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper for consistent API pathing
+  const api = useCallback((endpoint) => {
+    const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+    return `${base}/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  }, []);
+
   // Fetch all products from API
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/products`, { headers: baseHeaders() });
+      const res = await fetch(api('/products'), { headers: baseHeaders() });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setProducts(data.length > 0 ? data : defaultProducts);
@@ -57,7 +63,7 @@ export function useProducts() {
 
   // Add product (requires auth token)
   const addProduct = useCallback(async ({ name, price, rating = 5, image }, token) => {
-    const res = await fetch(`${API_BASE}/api/products`, {
+    const res = await fetch(api('/products'), {
       method: 'POST',
       headers: {
         ...baseHeaders(),
@@ -77,7 +83,7 @@ export function useProducts() {
 
   // Update product (requires auth token)
   const updateProduct = useCallback(async (id, updates, token) => {
-    const res = await fetch(`${API_BASE}/api/products/${id}`, {
+    const res = await fetch(api(`/products/${id}`), {
       method: 'PUT',
       headers: {
         ...baseHeaders(),
@@ -97,7 +103,7 @@ export function useProducts() {
 
   // Delete product (requires auth token)
   const deleteProduct = useCallback(async (id, token) => {
-    const res = await fetch(`${API_BASE}/api/products/${id}`, {
+    const res = await fetch(api(`/products/${id}`), {
       method: 'DELETE',
       headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
     });
@@ -112,7 +118,7 @@ export function useProducts() {
   const uploadImage = useCallback(async (file, token) => {
     const formData = new FormData();
     formData.append('image', file);
-    const res = await fetch(`${API_BASE}/api/upload`, {
+    const res = await fetch(api('/upload'), {
       method: 'POST',
       headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
       body: formData,

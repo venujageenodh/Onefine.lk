@@ -11,11 +11,16 @@ export function useAuth() {
 
     const isAuthenticated = Boolean(token);
 
+    const api = (path) => {
+        const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+        return `${base}/api${path.startsWith('/') ? path : `/${path}`}`;
+    };
+
     const login = useCallback(async (password) => {
         setError('');
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/api/auth/login`, {
+            const res = await fetch(api('/auth/login'), {
                 method: 'POST',
                 headers: { ...baseHeaders(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password }),

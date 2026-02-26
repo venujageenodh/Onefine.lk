@@ -72,7 +72,11 @@ app.use(express.json());
 
 // ── File Upload Setup ─────────────────────────────────────────────────────────
 const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+} catch (e) {
+  console.warn('⚠️ Could not create uploads directory (expected on Vercel):', e.message);
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -100,6 +104,9 @@ function requireAuth(req, res, next) {
 }
 
 // ── Auth Routes ───────────────────────────────────────────────────────────────
+// GET /api/health (public)
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Backend is running' }));
+
 // POST /api/auth/login
 app.post('/api/auth/login', (req, res) => {
   const { password } = req.body;
@@ -167,4 +174,8 @@ app.post('/api/upload', requireAuth, upload.single('image'), (req, res) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+}
+
+module.exports = app;

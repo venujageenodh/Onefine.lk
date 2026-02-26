@@ -9,7 +9,7 @@
         // https://github.com/rafgraph/spa-github-pages
         // This script takes the current URL and encodes the path and query
         // into the search parameter for the main index.html to handle routing.
-        var pathSegmentsToKeep = 1; // keep /Onefine.lk/ as base
+        var pathSegmentsToKeep = 0; // custom domain at root, no base path
         var l = window.location;
         l.replace(
             l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
