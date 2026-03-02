@@ -3,6 +3,7 @@ import { HiOutlineSearch, HiOutlineShoppingBag, HiMenu, HiX } from 'react-icons/
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useCart } from './hooks/useCart';
 import CartDrawer from './components/CartDrawer';
+import PaymentIcons from './components/PaymentIcons';
 import logo from './assets/onefine-logo.png';
 
 export default function AboutUsPage() {
@@ -177,8 +178,12 @@ export default function AboutUsPage() {
                                 <p>+94 76 812 1701</p>
                                 <p>onefine.info@gmail.com</p>
                             </div>
+
+                            <h4 className="mt-5 mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Methods</h4>
+                            <PaymentIcons />
                         </div>
                     </div>
+
                     <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
                         <p>© {new Date().getFullYear()} OneFine. All rights reserved.</p>
                         <div className="flex gap-4">
@@ -187,11 +192,11 @@ export default function AboutUsPage() {
                         </div>
                     </div>
                 </footer>
-            </div>
+            </div >
 
             <a href="https://wa.me/94768121701" target="_blank" rel="noopener noreferrer" className="fixed bottom-4 right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-soft transition-transform hover:-translate-y-0.5 md:bottom-6 md:right-6" aria-label="Chat on WhatsApp">
                 <FaWhatsapp className="text-2xl" />
             </a>
-        </div>
+        </div >
     );
 }

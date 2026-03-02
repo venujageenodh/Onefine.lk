@@ -11,6 +11,7 @@ import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/
 import { useProducts } from './hooks/useProducts';
 import { useCart } from './hooks/useCart';
 import CartDrawer from './components/CartDrawer';
+import PaymentIcons from './components/PaymentIcons';
 import logo from './assets/onefine-logo.png';
 import heroProducts from './assets/hero-products.png';
 
@@ -438,13 +439,8 @@ export default function App() {
                   <p>onefine.info@gmail.com</p>
                 </div>
 
-                <h4 className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Methods</h4>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-medium text-slate-600">
-                  <span className="rounded-full border border-slate-200 px-3 py-1">Visa</span>
-                  <span className="rounded-full border border-slate-200 px-3 py-1">Mastercard</span>
-                  <span className="rounded-full border border-slate-200 px-3 py-1">Cash on Delivery</span>
-                  <span className="rounded-full border border-slate-200 px-3 py-1">Bank Transfer</span>
-                </div>
+                <h4 className="mt-5 mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Methods</h4>
+                <PaymentIcons />
               </div>
             </div>
 
