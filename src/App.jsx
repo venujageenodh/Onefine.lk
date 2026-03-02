@@ -142,9 +142,9 @@ export default function App() {
             {/* Marble Texture Background for Mobile - Separate from the bottle image */}
             <div className="absolute inset-0 z-0 block bg-slate-50/50 md:hidden"></div>
 
-            <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 pt-40 pb-12 md:py-20 lg:py-32 xl:py-40">
-              <div className="flex flex-col md:grid md:grid-cols-2 md:items-center gap-10 md:gap-12">
-                <div className="space-y-10 md:space-y-8 animate-in fade-in slide-in-from-left duration-1000">
+            <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 pt-32 pb-10 md:py-20 lg:py-32 xl:py-40">
+              <div className="flex flex-col md:grid md:grid-cols-2 md:items-center gap-8 md:gap-12">
+                <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                   <div className="space-y-6">
                     <h1 className="font-display text-[32px] sm:text-[36px] leading-[1.2] text-navy md:text-5xl lg:text-6xl max-w-xl md:max-w-none">
                       Premium Corporate &amp; Custom Branding Solutions
@@ -187,13 +187,13 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Mobile Hero Image - Appears below buttons as requested */}
-                <div className="block md:hidden mt-10 animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
-                  <div className="relative mx-auto max-w-full flex justify-center">
+                {/* Mobile Hero Image - Positioned tighter below buttons */}
+                <div className="block md:hidden mt-6 pb-8 animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
+                  <div className="relative mx-auto max-w-full flex justify-center h-[240px] px-2 sm:px-4">
                     <img
                       src="/bg%20123.psd%20%281%29.png"
                       alt="Corporate Gifting Collection"
-                      className="w-full h-auto object-contain drop-shadow-2xl rounded-2xl"
+                      className="w-full h-full object-contain drop-shadow-xl"
                     />
                   </div>
                 </div>
@@ -463,7 +463,7 @@ export default function App() {
         href="https://wa.me/94768121701"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-4 right-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-soft transition-transform hover:-translate-y-0.5 md:bottom-6 md:right-6"
+        className="fixed bottom-6 right-6 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-soft transition-transform hover:-translate-y-0.5"
         aria-label="Chat on WhatsApp"
       >
         <FaWhatsapp className="text-2xl" />
