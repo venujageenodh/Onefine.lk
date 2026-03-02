@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { HiOutlineSearch, HiOutlineShoppingBag } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineShoppingBag, HiMenu, HiX } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useCart } from './hooks/useCart';
 import { useProducts } from './hooks/useProducts';
@@ -16,6 +16,7 @@ function resolveImageUrl(url) {
 export default function LuxgearCategoryPage() {
   const { addToCart, totalItems, setIsOpen } = useCart();
   const { products } = useProducts();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const luxgearProducts = useMemo(() => {
     return products.filter((p) => (p.name || '').toLowerCase().includes('luxgear'));
@@ -65,8 +66,26 @@ export default function LuxgearCategoryPage() {
                   <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-navy shadow-subtle">{totalItems}</span>
                 )}
               </button>
+              <button
+                aria-label="Toggle menu"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 md:hidden"
+              >
+                {mobileMenuOpen ? <HiX className="text-lg" /> : <HiMenu className="text-lg" />}
+              </button>
             </div>
           </div>
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="absolute top-full left-0 right-0 z-40 bg-white border-b border-slate-100 p-6 shadow-lg animate-in slide-in-from-top duration-300 md:hidden">
+              <nav className="flex flex-col gap-4 text-sm font-medium">
+                <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
+                <a href="/shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
+                <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
+                <span className="text-navy font-semibold">LUXGEAR Bottles</span>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 

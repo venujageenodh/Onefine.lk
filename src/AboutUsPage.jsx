@@ -1,5 +1,5 @@
 import React from 'react';
-import { HiOutlineSearch, HiOutlineShoppingBag } from 'react-icons/hi';
+import { HiOutlineSearch, HiOutlineShoppingBag, HiMenu, HiX } from 'react-icons/hi';
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useCart } from './hooks/useCart';
 import CartDrawer from './components/CartDrawer';
@@ -7,6 +7,7 @@ import logo from './assets/onefine-logo.png';
 
 export default function AboutUsPage() {
     const { totalItems, setIsOpen } = useCart();
+    const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
     return (
         <div className="min-h-screen bg-white text-navy">
@@ -39,8 +40,26 @@ export default function AboutUsPage() {
                                     <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-navy shadow-subtle">{totalItems}</span>
                                 )}
                             </button>
+                            <button
+                                aria-label="Toggle menu"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 md:hidden"
+                            >
+                                {mobileMenuOpen ? <HiX className="text-lg" /> : <HiMenu className="text-lg" />}
+                            </button>
                         </div>
                     </div>
+                    {/* Mobile Menu */}
+                    {mobileMenuOpen && (
+                        <div className="absolute top-full left-0 right-0 z-40 bg-white border-b border-slate-100 p-6 shadow-lg animate-in slide-in-from-top duration-300 md:hidden">
+                            <nav className="flex flex-col gap-4 text-sm font-medium">
+                                <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
+                                <a href="/shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
+                                <span className="text-navy font-semibold">About Us</span>
+                                <a href="/#contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                            </nav>
+                        </div>
+                    )}
                 </header>
 
                 {/* Main Content */}

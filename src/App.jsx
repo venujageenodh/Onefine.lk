@@ -4,6 +4,8 @@ import {
   HiOutlineShoppingBag,
   HiStar,
   HiOutlineStar,
+  HiMenu,
+  HiX,
 } from 'react-icons/hi';
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useProducts } from './hooks/useProducts';
@@ -34,6 +36,7 @@ function RatingStars({ value }) {
 export default function App() {
   const { products } = useProducts();
   const { addToCart, totalItems, setIsOpen, buildWhatsAppMessage } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const handleAddToCart = (product) => {
     addToCart({
@@ -100,8 +103,35 @@ export default function App() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 md:hidden"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <HiX className="text-lg" /> : <HiMenu className="text-lg" />}
+              </button>
             </div>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="absolute top-full left-0 right-0 z-40 bg-white border-b border-slate-100 p-6 shadow-lg animate-in slide-in-from-top duration-300 md:hidden">
+              <nav className="flex flex-col gap-4 text-sm font-medium">
+                <a href="#home" onClick={() => setMobileMenuOpen(false)} className="text-navy">Home</a>
+                <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
+                <a href="/luxgear-bottles" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">LUXGEAR Bottles</a>
+                <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
+                <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                <a
+                  href="#corporate"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mt-2 rounded-full border border-slate-200 px-4 py-2 text-center text-xs uppercase tracking-[0.18em] text-navy"
+                >
+                  Corporate Solutions
+                </a>
+              </nav>
+            </div>
+          )}
         </header>
 
         <main id="home" className="pb-16">
@@ -113,7 +143,7 @@ export default function App() {
               <div className="grid gap-12 md:grid-cols-2 md:items-center w-full pt-20">
                 <div className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                   <div className="space-y-5">
-                    <h1 className="font-display text-4xl leading-tight text-navy sm:text-5xl lg:text-6xl max-w-xl">
+                    <h1 className="font-display text-3xl leading-tight text-navy sm:text-4xl md:text-5xl lg:text-6xl max-w-xl">
                       Premium Corporate &amp; Custom Branding Solutions
                     </h1>
 
