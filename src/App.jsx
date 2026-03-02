@@ -137,7 +137,7 @@ export default function App() {
         <main id="home" className="pb-16">
           <section className="relative w-full aspect-video md:aspect-[1472/704] min-h-[500px] overflow-hidden">
             {/* Subtle Marble Texture Background */}
-            <div className="absolute inset-0 z-0 bg-[url('/bg%20123.psd.png')] bg-cover bg-center bg-no-repeat"></div>
+            <div className="absolute inset-0 z-0 bg-[url('/bg%20123.psd%20%281%29.png')] bg-cover bg-center bg-no-repeat"></div>
 
             <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-full flex items-center">
               <div className="grid gap-12 md:grid-cols-2 md:items-center w-full pt-20">
