@@ -15,26 +15,42 @@ const PaymentIcons = () => {
     ];
 
     return (
-        <div className="flex flex-col items-center justify-center w-full">
-            <h4 className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 text-center">
+        <div className="flex flex-col items-center justify-center w-full px-4">
+            <h4 className="mb-5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 text-center">
                 Secure Payment Options
             </h4>
-            <div className="grid grid-cols-2 gap-6 place-items-center sm:flex sm:flex-row sm:flex-wrap sm:justify-center sm:gap-8">
-                {icons.map((item, index) => (
-                    <div
-                        key={index}
-                        className={`flex items-center justify-center opacity-80 transition-opacity duration-300 hover:opacity-100 ${index === icons.length - 1 && icons.length % 2 !== 0 ? 'col-span-2' : ''
-                            }`}
-                        title={item.label}
-                    >
-                        <img
-                            src={item.src}
-                            alt={item.label}
-                            className="h-[30px] w-auto object-contain"
-                        />
-                    </div>
-                ))}
+
+            <div className="w-full flex justify-center">
+                <div
+                    className="flex flex-row items-center gap-6 sm:gap-8 overflow-x-auto no-scrollbar pb-2 scroll-smooth"
+                    style={{
+                        flexWrap: 'nowrap',
+                        msOverflowStyle: 'none',
+                        scrollbarWidth: 'none'
+                    }}
+                >
+                    {icons.map((item, index) => (
+                        <div
+                            key={index}
+                            className="flex-shrink-0 flex items-center justify-center opacity-85 transition-opacity duration-300 hover:opacity-100"
+                            title={item.label}
+                        >
+                            <img
+                                src={item.src}
+                                alt={item.label}
+                                className="h-[28px] w-auto object-contain pointer-events-none"
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+            `}} />
         </div>
     );
 };
