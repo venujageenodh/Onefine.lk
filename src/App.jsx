@@ -142,11 +142,11 @@ export default function App() {
             {/* Marble Texture Background for Mobile - Separate from the bottle image */}
             <div className="absolute inset-0 z-0 block bg-slate-50/50 md:hidden"></div>
 
-            <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 pt-28 pb-12 md:py-20 lg:py-32 xl:py-40">
+            <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 pt-40 pb-12 md:py-20 lg:py-32 xl:py-40">
               <div className="flex flex-col md:grid md:grid-cols-2 md:items-center gap-10 md:gap-12">
                 <div className="space-y-10 md:space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                   <div className="space-y-6">
-                    <h1 className="font-display text-[28px] sm:text-[32px] leading-[1.2] text-navy md:text-5xl lg:text-6xl max-w-xl md:max-w-none">
+                    <h1 className="font-display text-[32px] sm:text-[36px] leading-[1.2] text-navy md:text-5xl lg:text-6xl max-w-xl md:max-w-none">
                       Premium Corporate &amp; Custom Branding Solutions
                     </h1>
 
