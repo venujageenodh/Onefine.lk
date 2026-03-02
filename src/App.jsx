@@ -142,16 +142,16 @@ export default function App() {
             {/* Marble Texture Background for Mobile - Separate from the bottle image */}
             <div className="absolute inset-0 z-0 block bg-slate-50/50 md:hidden"></div>
 
-            <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-32 xl:py-40">
+            <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8 pt-28 pb-12 md:py-20 lg:py-32 xl:py-40">
               <div className="flex flex-col md:grid md:grid-cols-2 md:items-center gap-10 md:gap-12">
-                <div className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
+                <div className="space-y-10 md:space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                   <div className="space-y-6">
-                    <h1 className="font-display text-[32px] sm:text-[36px] leading-[1.2] text-navy md:text-5xl lg:text-6xl max-w-xl md:max-w-none">
+                    <h1 className="font-display text-[28px] sm:text-[32px] leading-[1.2] text-navy md:text-5xl lg:text-6xl max-w-xl md:max-w-none">
                       Premium Corporate &amp; Custom Branding Solutions
                     </h1>
 
                     <div className="space-y-4">
-                      <p className="max-w-md text-sm leading-relaxed text-slate-500 sm:text-base">
+                      <p className="max-w-md text-xs sm:text-sm leading-relaxed text-slate-500 md:text-base">
                         High-quality custom name bottles and corporate gift items in Sri Lanka.
                       </p>
 
@@ -168,10 +168,10 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row md:flex-wrap items-center gap-3 md:gap-4 w-full">
+                  <div className="flex flex-col sm:flex-row md:flex-wrap items-center gap-4 w-full">
                     <a
                       href="/luxgear-bottles"
-                      className="inline-flex w-full sm:w-auto h-[48px] md:h-auto items-center justify-center rounded-lg bg-gold px-8 py-3 text-sm font-bold text-navy shadow-soft transition-all hover:translate-y-[-2px] hover:shadow-lg hover:bg-gold-soft active:translate-y-0"
+                      className="inline-flex w-full sm:w-auto h-[52px] md:h-auto items-center justify-center rounded-lg bg-gold px-8 py-3 text-sm font-bold text-navy shadow-soft transition-all hover:translate-y-[-2px] hover:shadow-lg hover:bg-gold-soft active:translate-y-0"
                     >
                       Shop Now
                     </a>
@@ -180,7 +180,7 @@ export default function App() {
                         const msg = "Hello OneFine! I'd like to get a custom corporate gifting quote.";
                         window.open(`https://wa.me/94768121701?text=${encodeURIComponent(msg)}`, '_blank');
                       }}
-                      className="inline-flex w-full sm:w-auto h-[48px] md:h-auto items-center justify-center rounded-lg border border-navy px-8 py-3 text-sm font-bold text-navy transition-all hover:bg-navy hover:text-white"
+                      className="inline-flex w-full sm:w-auto h-[52px] md:h-auto items-center justify-center rounded-lg border border-navy px-8 py-3 text-sm font-bold text-navy transition-all hover:bg-navy hover:text-white"
                     >
                       Get Custom Quote
                     </button>
@@ -188,8 +188,8 @@ export default function App() {
                 </div>
 
                 {/* Mobile Hero Image - Appears below buttons as requested */}
-                <div className="block md:hidden mt-4 animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
-                  <div className="relative mx-auto max-w-[90%] flex justify-center">
+                <div className="block md:hidden mt-10 animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
+                  <div className="relative mx-auto max-w-full flex justify-center">
                     <img
                       src="/bg%20123.psd%20%281%29.png"
                       alt="Corporate Gifting Collection"
