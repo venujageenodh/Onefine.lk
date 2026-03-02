@@ -143,7 +143,7 @@ export default function App() {
               <div className="grid gap-12 md:grid-cols-2 md:items-center w-full pt-20">
                 <div className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                   <div className="space-y-5">
-                    <h1 className="font-display text-3xl leading-tight text-navy sm:text-4xl md:text-5xl lg:text-6xl max-w-xl">
+                    <h1 className="font-display text-2xl leading-tight text-navy sm:text-3xl md:text-5xl lg:text-6xl max-w-xl">
                       Premium Corporate &amp; Custom Branding Solutions
                     </h1>
 
@@ -359,10 +359,10 @@ export default function App() {
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <a
-                    href="mailto:hello@onefine.lk"
+                    href="mailto:onefine.info@gmail.com"
                     className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-navy shadow-subtle transition hover:-translate-y-0.5"
                   >
-                    hello@onefine.lk
+                    onefine.info@gmail.com
                   </a>
                   <a
                     href="tel:+94768121701"
@@ -393,10 +393,10 @@ export default function App() {
                   teams based in Sri Lanka.
                 </p>
                 <div className="flex items-center gap-3">
-                  <a href="#" aria-label="Facebook" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
+                  <a href="https://www.facebook.com/share/14UfX7GiR5r/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                     <FaFacebookF className="text-[13px]" />
                   </a>
-                  <a href="#" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
+                  <a href="https://www.instagram.com/_.one_.fine_?igsh=ZHZocWd5c3Jxd24w" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                     <FaInstagram className="text-[13px]" />
                   </a>
                   <a href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
@@ -421,7 +421,7 @@ export default function App() {
                 <div className="mt-3 space-y-1 text-sm text-slate-600">
                   <p>20/9, Green Terrace, Parakandeniya, Imbulgoda</p>
                   <p>+94 76 812 1701</p>
-                  <p>hello@onefine.lk</p>
+                  <p>onefine.info@gmail.com</p>
                 </div>
 
                 <h4 className="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Methods</h4>

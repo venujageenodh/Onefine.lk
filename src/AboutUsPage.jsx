@@ -147,10 +147,10 @@ export default function AboutUsPage() {
                                 Premium corporate gifting and branded merchandise, designed and delivered with precision for Sri Lankan businesses and global teams based in Sri Lanka.
                             </p>
                             <div className="flex items-center gap-3 mt-4">
-                                <a href="#" aria-label="Facebook" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
+                                <a href="https://www.facebook.com/share/14UfX7GiR5r/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                                     <FaFacebookF className="text-[13px]" />
                                 </a>
-                                <a href="#" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
+                                <a href="https://www.instagram.com/_.one_.fine_?igsh=ZHZocWd5c3Jxd24w" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                                     <FaInstagram className="text-[13px]" />
                                 </a>
                                 <a href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
@@ -175,7 +175,7 @@ export default function AboutUsPage() {
                             <div className="mt-3 space-y-1 text-sm text-slate-600">
                                 <p>20/9, Green Terrace, Parakandeniya, Imbulgoda</p>
                                 <p>+94 76 812 1701</p>
-                                <p>hello@onefine.lk</p>
+                                <p>onefine.info@gmail.com</p>
                             </div>
                         </div>
                     </div>
