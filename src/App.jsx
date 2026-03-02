@@ -70,6 +70,7 @@ export default function App() {
             <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
               <a href="#home" className="hover:text-navy transition-colors">Home</a>
               <a href="#shop" className="hover:text-navy transition-colors">Shop</a>
+              <a href="/luxgear-bottles" className="hover:text-navy transition-colors">LUXGEAR Bottles</a>
               <a href="/about" className="hover:text-navy transition-colors">About Us</a>
               <a href="#contact" className="hover:text-navy transition-colors">Contact</a>
               <a
@@ -136,7 +137,7 @@ export default function App() {
 
                   <div className="flex flex-wrap items-center gap-4">
                     <a
-                      href="#shop"
+                      href="/luxgear-bottles"
                       className="inline-flex items-center justify-center rounded-lg bg-gold px-8 py-3 text-sm font-bold text-navy shadow-soft transition-all hover:translate-y-[-2px] hover:shadow-lg hover:bg-gold-soft active:translate-y-0"
                     >
                       Shop Now

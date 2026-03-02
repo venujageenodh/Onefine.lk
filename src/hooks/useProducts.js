@@ -26,6 +26,13 @@ const defaultProducts = [
     rating: 5,
     image: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&auto=format&fit=crop&q=80',
   },
+  {
+    _id: 'default-4',
+    name: 'Luxgear Toyota Edition Bottle',
+    price: 'Rs. 4,950',
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
+  },
 ];
 
 export function useProducts() {

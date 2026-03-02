@@ -52,8 +52,14 @@ async function seedDefaults() {
         rating: 5,
         image: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?w=800&auto=format&fit=crop&q=80',
       },
+      {
+        name: 'Luxgear Edition Bottle',
+        price: 'Rs. 4,950',
+        rating: 5,
+        image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
+      },
     ]);
-    console.log('\uD83C\uDF31 Seeded default products');
+    console.log('\uD83C\uDF31 Seeded default products with Luxgear');
   }
 }
 

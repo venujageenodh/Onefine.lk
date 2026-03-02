@@ -66,6 +66,9 @@ export default function ShopPage() {
                 Home
               </a>
               <span className="text-navy font-semibold">Shop</span>
+              <a href="/luxgear-bottles" className="hover:text-navy transition-colors">
+                LUXGEAR Bottles
+              </a>
               <a href="/about" className="hover:text-navy transition-colors">
                 About Us
               </a>
