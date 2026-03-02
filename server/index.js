@@ -77,23 +77,44 @@ app.use(cors({
 app.use(express.json());
 
 // ── File Upload Setup ─────────────────────────────────────────────────────────
-const uploadDir = path.join(__dirname, '..', 'uploads');
+const uploadDir = path.resolve(__dirname, '..', 'uploads');
+
+// Ensure directory exists with better logging
 try {
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  if (!fs.existsSync(uploadDir)) {
+    console.log('📦 Creating uploads directory at:', uploadDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
+  } else {
+    console.log('✅ Uploads directory found at:', uploadDir);
+  }
 } catch (e) {
-  console.warn('⚠️ Could not create uploads directory (expected on Vercel):', e.message);
+  console.warn('⚠️ Could not create uploads directory (expected on serverless):', e.message);
 }
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
+  destination: (req, file, cb) => {
+    // Fallback to /tmp on Vercel if root is read-only
+    const dest = process.env.VERCEL ? '/tmp/uploads' : uploadDir;
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
   filename: (_req, file, cb) => {
     const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     cb(null, `${Date.now()}-${safe}`);
   },
 });
-const upload = multer({ storage });
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 app.use('/uploads', express.static(uploadDir));
+
+// Also serve /tmp/uploads if on Vercel
+if (process.env.VERCEL) {
+  app.use('/uploads', express.static('/tmp/uploads'));
+}
 
 // ── Auth Middleware ───────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -111,7 +132,7 @@ function requireAuth(req, res, next) {
 
 // ── Auth Routes ───────────────────────────────────────────────────────────────
 // GET /api/health (public)
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Backend is running' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Backend is running', time: new Date().toISOString() }));
 
 // POST /api/auth/login
 app.post('/api/auth/login', (req, res) => {
@@ -173,10 +194,28 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
 });
 
 // POST /api/upload  (protected)
-app.post('/api/upload', requireAuth, upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  const url = `/uploads/${req.file.filename}`;
-  res.json({ url });
+app.post('/api/upload', requireAuth, (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('❌ Multer error:', err);
+      return res.status(400).json({ error: `Multer Error: ${err.message}` });
+    } else if (err) {
+      console.error('❌ Upload error:', err);
+      return res.status(500).json({ error: `Server Error: ${err.message}` });
+    }
+
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    console.log('✅ File uploaded successfully:', req.file.filename);
+    const url = `/uploads/${req.file.filename}`;
+    res.json({ url });
+  });
+});
+
+// Error handling middleware for all routes
+app.use((err, req, res, next) => {
+  console.error('🚨 Global server error:', err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

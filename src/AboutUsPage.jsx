@@ -178,10 +178,11 @@ export default function AboutUsPage() {
                                 <p>+94 76 812 1701</p>
                                 <p>onefine.info@gmail.com</p>
                             </div>
-
-                            <h4 className="mt-5 mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment Methods</h4>
-                            <PaymentIcons />
                         </div>
+                    </div>
+
+                    <div className="mt-12 flex justify-center">
+                        <PaymentIcons />
                     </div>
 
                     <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
