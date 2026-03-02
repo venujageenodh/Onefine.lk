@@ -143,7 +143,7 @@ export default function App() {
               <div className="grid gap-12 md:grid-cols-2 md:items-center w-full pt-20">
                 <div className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                   <div className="space-y-5">
-                    <h1 className="font-display text-2xl leading-tight text-navy sm:text-3xl md:text-5xl lg:text-6xl max-w-xl">
+                    <h1 className="font-display text-2xl leading-tight text-navy sm:text-3xl md:text-5xl lg:text-6xl max-w-[240px] sm:max-w-xl">
                       Premium Corporate &amp; Custom Branding Solutions
                     </h1>
 
