@@ -22,13 +22,34 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'onefine';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // ── MongoDB Connection ────────────────────────────────────────────────────────
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is missing from environment variables!');
+}
+
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000, // Kill connection attempt after 5s
+    socketTimeoutMS: 45000,        // Close sockets after 45s of inactivity
+  })
   .then(async () => {
     console.log('✅ Connected to MongoDB');
-    await seedDefaults();
+    try {
+      await seedDefaults();
+    } catch (seedErr) {
+      console.error('⚠️ Seeding failed:', seedErr.message);
+    }
   })
-  .catch((err) => console.error('❌ MongoDB error:', err));
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    if (err.message.includes('buffering timed out')) {
+      console.error('👉 Suggestion: Check if your MongoDB Atlas IP Whitelist allows all connections (0.0.0.0/0)');
+    }
+  });
+
+// Monitor connection
+mongoose.connection.on('error', err => {
+  console.error('🚨 Mongoose connection error event:', err);
+});
 
 async function seedDefaults() {
   const count = await Product.countDocuments();
@@ -132,7 +153,19 @@ function requireAuth(req, res, next) {
 
 // ── Auth Routes ───────────────────────────────────────────────────────────────
 // GET /api/health (public)
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Backend is running', time: new Date().toISOString() }));
+app.get('/api/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState;
+  const dbStatusMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+
+  res.json({
+    status: 'ok',
+    message: 'Backend is running',
+    database: dbStatusMap[dbStatus] || 'unknown',
+    uri_configured: Boolean(MONGODB_URI),
+    uri_preview: MONGODB_URI ? `${MONGODB_URI.substring(0, 15)}...` : 'none',
+    time: new Date().toISOString()
+  });
+});
 
 // POST /api/auth/login
 app.post('/api/auth/login', (req, res) => {
