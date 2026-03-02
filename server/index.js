@@ -26,6 +26,9 @@ if (!MONGODB_URI) {
   console.error('❌ MONGODB_URI is missing from environment variables!');
 }
 
+// Disable buffering globally so queries fail fast if DB is disconnected
+mongoose.set('bufferCommands', false);
+
 mongoose
   .connect(MONGODB_URI, {
     serverSelectionTimeoutMS: 5000, // Kill connection attempt after 5s
@@ -41,14 +44,14 @@ mongoose
   })
   .catch((err) => {
     console.error('❌ MongoDB connection error:', err.message);
-    if (err.message.includes('buffering timed out')) {
+    if (err.message.includes('buffering timed out') || err.message.includes('selection timed out')) {
       console.error('👉 Suggestion: Check if your MongoDB Atlas IP Whitelist allows all connections (0.0.0.0/0)');
     }
   });
 
 // Monitor connection
 mongoose.connection.on('error', err => {
-  console.error('🚨 Mongoose connection error event:', err);
+  console.error('🚨 Mongoose connection error event:', err.message || err);
 });
 
 async function seedDefaults() {
