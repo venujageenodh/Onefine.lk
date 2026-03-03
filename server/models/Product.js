@@ -7,6 +7,7 @@ const productSchema = new mongoose.Schema(
         rating: { type: Number, default: 5, min: 1, max: 5 },
         image: { type: String, default: '' },
         isBestSeller: { type: Boolean, default: false },
+        collectionSlug: { type: String, default: '', trim: true },
     },
     { timestamps: true }
 );

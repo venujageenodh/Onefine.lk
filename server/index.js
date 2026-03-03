@@ -22,6 +22,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
+const Collection = require('./models/Collection');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -88,10 +89,33 @@ async function seedDefaults() {
         name: 'Luxgear Edition Bottle',
         price: 'Rs. 4,950',
         rating: 5,
+        collectionSlug: 'luxgear-bottles',
         image: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
       },
     ]);
-    console.log('\uD83C\uDF31 Seeded default products with Luxgear');
+    console.log('\uD83C\uDF31 Seeded default products');
+  }
+
+  // Seed default collections
+  const colCount = await Collection.countDocuments();
+  if (colCount === 0) {
+    await Collection.insertMany([
+      {
+        name: 'LUXGEAR Bottles',
+        slug: 'luxgear-bottles',
+        description: 'Premium double-wall insulated bottles, custom-branded for leading automotive and corporate brands.',
+        coverImage: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
+        sortOrder: 1,
+      },
+      {
+        name: 'Tissue Boxes',
+        slug: 'tissue-boxes',
+        description: 'Premium branded tissue boxes available in multiple brand editions, perfect for corporate gifting.',
+        coverImage: 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=800&auto=format&fit=crop&q=80',
+        sortOrder: 2,
+      },
+    ]);
+    console.log('\u{1F4E6} Seeded default collections');
   }
 }
 
@@ -221,10 +245,10 @@ app.post('/api/products', requireAuth, async (req, res) => {
 // PUT /api/products/:id  (protected)
 app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image, isBestSeller } = req.body;
+    const { name, price, rating, image, isBestSeller, collectionSlug } = req.body;
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, price, rating, image, isBestSeller },
+      { name, price, rating, image, isBestSeller, collectionSlug },
       { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ error: 'Product not found' });
@@ -239,6 +263,74 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Collection Routes ─────────────────────────────────────────────────────────
+
+// GET /api/collections  (public)
+app.get('/api/collections', async (_req, res) => {
+  try {
+    const collections = await Collection.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 });
+    res.json(collections);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/collections/:slug/products  (public)
+app.get('/api/collections/:slug/products', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    // Products with matching collectionSlug OR (legacy) name containing the slug keyword
+    const keyword = slug.replace(/-/g, ' ').replace('bottles', '').trim();
+    const products = await Product.find({
+      $or: [
+        { collectionSlug: slug },
+        { collectionSlug: '', name: { $regex: keyword, $options: 'i' } },
+      ]
+    }).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/collections  (admin)
+app.post('/api/collections', requireAuth, async (req, res) => {
+  try {
+    const { name, slug, description, coverImage, isActive, sortOrder } = req.body;
+    const col = await Collection.create({ name, slug, description, coverImage, isActive, sortOrder });
+    res.status(201).json(col);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PUT /api/collections/:id  (admin)
+app.put('/api/collections/:id', requireAuth, async (req, res) => {
+  try {
+    const { name, slug, description, coverImage, isActive, sortOrder } = req.body;
+    const col = await Collection.findByIdAndUpdate(
+      req.params.id,
+      { name, slug, description, coverImage, isActive, sortOrder },
+      { new: true, runValidators: true }
+    );
+    if (!col) return res.status(404).json({ error: 'Collection not found' });
+    res.json(col);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /api/collections/:id  (admin)
+app.delete('/api/collections/:id', requireAuth, async (req, res) => {
+  try {
+    const col = await Collection.findByIdAndDelete(req.params.id);
+    if (!col) return res.status(404).json({ error: 'Collection not found' });
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });

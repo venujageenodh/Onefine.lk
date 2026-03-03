@@ -5,6 +5,7 @@ import AdminDashboard from './AdminDashboard.jsx';
 import AdminOrdersPage from './AdminOrdersPage.jsx';
 import ShopPage from './ShopPage.jsx';
 import LuxgearCategoryPage from './LuxgearCategoryPage.jsx';
+import CollectionDetailPage from './CollectionDetailPage.jsx';
 import AboutUsPage from './AboutUsPage.jsx';
 import ContactPage from './ContactPage.jsx';
 import CheckoutPage from './CheckoutPage.jsx';
@@ -14,13 +15,20 @@ import './index.css';
 
 const path = window.location.pathname;
 
+// Redirect old /luxgear-bottles → new dynamic /collection page
+if (path === '/luxgear-bottles' || path.startsWith('/luxgear-bottles')) {
+  window.location.replace('/collection?slug=luxgear-bottles');
+}
+
 let RootComponent = App;
 if (path.includes('/admin/orders')) {
   RootComponent = AdminOrdersPage;
 } else if (path.includes('/admin')) {
   RootComponent = AdminDashboard;
+} else if (path.includes('/collection')) {
+  RootComponent = CollectionDetailPage;
 } else if (path.includes('/luxgear-bottles')) {
-  RootComponent = LuxgearCategoryPage;
+  RootComponent = LuxgearCategoryPage; // fallback (redirect above handles it)
 } else if (path.includes('/about')) {
   RootComponent = AboutUsPage;
 } else if (path.includes('/contact-us')) {

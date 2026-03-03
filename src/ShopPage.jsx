@@ -3,6 +3,7 @@ import { HiOutlineSearch, HiOutlineShoppingBag, HiStar, HiOutlineStar, HiMenu, H
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useProducts } from './hooks/useProducts';
 import { useCart } from './hooks/useCart';
+import { useCollections } from './hooks/useCollections';
 import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import PaymentIcons from './components/PaymentIcons';
@@ -28,6 +29,7 @@ function RatingStars({ value }) {
 
 export default function ShopPage() {
   const { products } = useProducts();
+  const { collections } = useCollections();
   const { addToCart, totalItems, setIsOpen } = useCart();
   const [query, setQuery] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -53,26 +55,15 @@ export default function ShopPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    // Exclude luxgear items — they are represented by the LUXGEAR collection card
-    const nonLuxgear = products.filter(
-      (p) => !(p.name || '').toLowerCase().includes('luxgear')
+    // Exclude products that belong to any collection
+    const slugsInUse = new Set(collections.map(c => c.slug));
+    const general = products.filter(
+      (p) => !p.collectionSlug && !(p.name || '').toLowerCase().includes('luxgear')
     );
-    if (!query) return nonLuxgear;
+    if (!query) return general;
     const q = query.trim().toLowerCase();
-    return nonLuxgear.filter((p) => (p.name || '').toLowerCase().includes(q));
-  }, [products, query]);
-
-  // Does the store have any luxgear items? (used to show LUXGEAR card)
-  const hasLuxgear = useMemo(
-    () => products.some((p) => (p.name || '').toLowerCase().includes('luxgear')),
-    [products]
-  );
-
-  // Pick a representative luxgear image for the collection card
-  const luxgearImage = useMemo(() => {
-    const first = products.find((p) => (p.name || '').toLowerCase().includes('luxgear'));
-    return first?.image || '';
-  }, [products]);
+    return general.filter((p) => (p.name || '').toLowerCase().includes(q));
+  }, [products, collections, query]);
 
   return (
     <div className="min-h-screen bg-white text-navy">
@@ -187,43 +178,51 @@ export default function ShopPage() {
                 </div>
 
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {/* ── LUXGEAR Collection Card (always pinned first) ── */}
-                  {(hasLuxgear || true) && !query && (
-                    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft border border-gold/20">
-                      <a href="/luxgear-bottles" className="block relative w-full aspect-square overflow-hidden bg-gradient-to-br from-navy/5 to-gold/10 rounded-t-2xl">
-                        {luxgearImage ? (
-                          <img
-                            src={resolveImageUrl(luxgearImage)}
-                            alt="LUXGEAR Bottles"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="font-display text-4xl text-gold/30">LG</span>
-                          </div>
-                        )}
-                        <span className="absolute top-3 left-3 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy shadow-sm">
-                          Collection
-                        </span>
-                      </a>
-                      <div className="flex flex-1 flex-col gap-3 p-4">
-                        <div className="space-y-1">
-                          <h2 className="font-medium text-sm text-navy">LUXGEAR — Brand Bottles</h2>
-                          <p className="text-xs text-slate-500">Custom-branded insulated bottles for leading brands</p>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-slate-500">
-                          <RatingStars value={5} />
-                          <span>Multiple brands</span>
-                        </div>
-                        <a
-                          href="/luxgear-bottles"
-                          className="mt-auto inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
-                        >
-                          View All Brands →
+                  {/* ── Dynamic Collection Cards ── */}
+                  {!query && collections.map((col) => {
+                    // Use first product of this collection as cover
+                    const coverProd = products.find(p =>
+                      p.collectionSlug === col.slug ||
+                      (p.name || '').toLowerCase().includes(col.slug.replace(/-/g, ' ').split(' ')[0])
+                    );
+                    const image = col.coverImage || coverProd?.image || '';
+                    return (
+                      <article key={col._id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft border border-gold/20">
+                        <a href={`/collection?slug=${col.slug}`} className="block relative w-full aspect-square overflow-hidden bg-gradient-to-br from-navy/5 to-gold/10 rounded-t-2xl">
+                          {image ? (
+                            <img
+                              src={resolveImageUrl(image)}
+                              alt={col.name}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="font-display text-4xl text-gold/30">🏷️</span>
+                            </div>
+                          )}
+                          <span className="absolute top-3 left-3 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy shadow-sm">
+                            Collection
+                          </span>
                         </a>
-                      </div>
-                    </article>
-                  )}
+                        <div className="flex flex-1 flex-col gap-3 p-4">
+                          <div className="space-y-1">
+                            <h2 className="font-medium text-sm text-navy">{col.name}</h2>
+                            <p className="text-xs text-slate-500 line-clamp-1">{col.description || 'Multiple brands available'}</p>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-slate-500">
+                            <RatingStars value={5} />
+                            <span>Multiple brands</span>
+                          </div>
+                          <a
+                            href={`/collection?slug=${col.slug}`}
+                            className="mt-auto inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
+                          >
+                            View All Brands →
+                          </a>
+                        </div>
+                      </article>
+                    );
+                  })}
 
                   {/* ── General Products ── */}
                   {filteredProducts.map((product) => (

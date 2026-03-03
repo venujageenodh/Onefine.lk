@@ -10,6 +10,7 @@ import {
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useProducts } from './hooks/useProducts';
 import { useCart } from './hooks/useCart';
+import { useCollections } from './hooks/useCollections';
 import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import PaymentIcons from './components/PaymentIcons';
@@ -40,6 +41,7 @@ function RatingStars({ value }) {
 
 export default function App() {
   const { products } = useProducts();
+  const { collections } = useCollections();
   const { addToCart, totalItems, setIsOpen, buildWhatsAppMessage } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
@@ -275,21 +277,25 @@ export default function App() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {/* LUXGEAR Collection Card - always first */}
-              {(() => {
-                const luxFirst = products.find(p => (p.name || '').toLowerCase().includes('luxgear'));
+              {/* Dynamic Collection Cards */}
+              {collections.map((col) => {
+                const coverProd = products.find(p =>
+                  p.collectionSlug === col.slug ||
+                  (p.name || '').toLowerCase().includes(col.slug.replace(/-/g, ' ').split(' ')[0])
+                );
+                const image = col.coverImage || coverProd?.image || '';
                 return (
-                  <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft border border-gold/20">
-                    <a href="/luxgear-bottles" className="block relative w-full aspect-square overflow-hidden bg-gradient-to-br from-navy/5 to-gold/10 rounded-t-2xl">
-                      {luxFirst?.image ? (
+                  <article key={col._id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft border border-gold/20">
+                    <a href={`/collection?slug=${col.slug}`} className="block relative w-full aspect-square overflow-hidden bg-gradient-to-br from-navy/5 to-gold/10 rounded-t-2xl">
+                      {image ? (
                         <img
-                          src={resolveImageUrl(luxFirst.image)}
-                          alt="LUXGEAR Bottles"
+                          src={resolveImageUrl(image)}
+                          alt={col.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="font-display text-5xl text-gold/20">LG</span>
+                          <span className="font-display text-5xl text-gold/20">🏷️</span>
                         </div>
                       )}
                       <span className="absolute top-3 left-3 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy shadow-sm">
@@ -298,8 +304,8 @@ export default function App() {
                     </a>
                     <div className="flex flex-1 flex-col gap-3 p-4">
                       <div className="space-y-1">
-                        <h3 className="font-medium text-sm text-navy">LUXGEAR — Brand Bottles</h3>
-                        <p className="text-xs text-slate-500">Custom-branded insulated bottles for leading brands</p>
+                        <h3 className="font-medium text-sm text-navy">{col.name}</h3>
+                        <p className="text-xs text-slate-500 line-clamp-1">{col.description || 'Multiple brands available'}</p>
                       </div>
                       <div className="flex items-center justify-between text-xs text-slate-500">
                         <RatingStars value={5} />
@@ -307,7 +313,7 @@ export default function App() {
                       </div>
                       <div className="mt-auto">
                         <a
-                          href="/luxgear-bottles"
+                          href={`/collection?slug=${col.slug}`}
                           className="inline-flex w-full items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
                         >
                           View All Brands →
@@ -316,12 +322,12 @@ export default function App() {
                     </div>
                   </article>
                 );
-              })()}
+              })}
 
-              {/* Non-luxgear best sellers (up to 2 more cards) */}
-              {(products.filter(p => p.isBestSeller && !(p.name || '').toLowerCase().includes('luxgear')).length > 0
-                ? products.filter(p => p.isBestSeller && !(p.name || '').toLowerCase().includes('luxgear'))
-                : products.filter(p => !(p.name || '').toLowerCase().includes('luxgear')).slice(0, 2)
+              {/* Non-collection best sellers (up to 2 more cards) */}
+              {(products.filter(p => p.isBestSeller && !p.collectionSlug && !(p.name || '').toLowerCase().includes('luxgear')).length > 0
+                ? products.filter(p => p.isBestSeller && !p.collectionSlug && !(p.name || '').toLowerCase().includes('luxgear'))
+                : products.filter(p => !p.collectionSlug && !(p.name || '').toLowerCase().includes('luxgear')).slice(0, Math.max(0, 3 - collections.length))
               ).map((product) => (
                 <article
                   key={product._id}
