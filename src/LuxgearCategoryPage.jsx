@@ -4,6 +4,7 @@ import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/
 import { useCart } from './hooks/useCart';
 import { useProducts } from './hooks/useProducts';
 import CartDrawer from './components/CartDrawer';
+import CheckoutModal from './components/CheckoutModal';
 import PaymentIcons from './components/PaymentIcons';
 import logo from './assets/onefine-logo.png';
 
@@ -18,6 +19,7 @@ export default function LuxgearCategoryPage() {
   const { addToCart, totalItems, setIsOpen } = useCart();
   const { products } = useProducts();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [checkoutProduct, setCheckoutProduct] = React.useState(null);
 
   const luxgearProducts = useMemo(() => {
     return products.filter((p) => (p.name || '').toLowerCase().includes('luxgear'));
@@ -28,13 +30,18 @@ export default function LuxgearCategoryPage() {
   };
 
   const handleBuyNow = (product) => {
-    const msg = `🛍️ *Buy Now – OneFine.lk*\n\n• ${product.name}\n• ${product.price}\n\nPlease confirm my order. Thank you!`;
-    window.open(`https://wa.me/94768121701?text=${encodeURIComponent(msg)}`, '_blank');
+    setCheckoutProduct(product);
   };
 
   return (
     <div className="min-h-screen bg-white text-navy">
       <CartDrawer />
+      {checkoutProduct && (
+        <CheckoutModal
+          product={checkoutProduct}
+          onClose={() => setCheckoutProduct(null)}
+        />
+      )}
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
