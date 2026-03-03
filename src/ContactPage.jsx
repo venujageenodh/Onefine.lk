@@ -421,9 +421,13 @@ export default function ContactPage() {
                         </div>
                     </div>
 
-                    <div className="mt-16 flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-8 text-[10px] uppercase tracking-widest text-slate-400 sm:flex-row">
-                        <p>© {new Date().getFullYear()} OneFine Private Limited. All rights reserved.</p>
-                        <div className="flex gap-8">
+                    <div className="mt-12 flex justify-center">
+                        <PaymentIcons />
+                    </div>
+
+                    <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
+                        <p>© {new Date().getFullYear()} OneFine. All rights reserved.</p>
+                        <div className="flex gap-4">
                             <a href="/privacy" className="hover:text-navy transition-colors">Privacy Policy</a>
                             <a href="/terms" className="hover:text-navy transition-colors">Terms of Service</a>
                         </div>
