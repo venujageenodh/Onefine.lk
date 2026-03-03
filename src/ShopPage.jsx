@@ -28,8 +28,19 @@ function RatingStars({ value }) {
 export default function ShopPage() {
   const { products } = useProducts();
   const { addToCart, totalItems, setIsOpen } = useCart();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('q') || '';
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const searchInputRef = React.useRef(null);
+
+  const handleSearchButtonClick = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => searchInputRef.current && searchInputRef.current.focus(), 400);
+    }
+  };
 
   const handleAddToCart = (product) => {
     addToCart({ id: product._id, name: product.name, price: product.price, image: product.image });
@@ -80,6 +91,7 @@ export default function ShopPage() {
             <div className="flex items-center gap-3">
               <button
                 aria-label="Search"
+                onClick={handleSearchButtonClick}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-all"
               >
                 <HiOutlineSearch className="text-lg" />
@@ -138,6 +150,7 @@ export default function ShopPage() {
                   <div className="relative max-w-md">
                     <input
                       id="search"
+                      ref={searchInputRef}
                       type="search"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}

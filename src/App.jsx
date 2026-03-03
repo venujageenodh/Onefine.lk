@@ -41,12 +41,28 @@ export default function App() {
   const { products } = useProducts();
   const { addToCart, totalItems, setIsOpen, buildWhatsAppMessage } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const searchRef = React.useRef(null);
 
   React.useEffect(() => {
     if (window.location.hash === '#contact') {
       window.location.replace('/contact-us');
     }
   }, []);
+
+  React.useEffect(() => {
+    if (searchOpen && searchRef.current) {
+      setTimeout(() => searchRef.current && searchRef.current.focus(), 100);
+    }
+  }, [searchOpen]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/shop?q=${encodeURIComponent(searchQuery.trim())}`;
+    }
+  };
 
   const handleAddToCart = (product) => {
     addToCart({
@@ -96,9 +112,13 @@ export default function App() {
             <div className="flex items-center gap-3">
               <button
                 aria-label="Search"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-all"
+                onClick={() => setSearchOpen(!searchOpen)}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all ${searchOpen
+                    ? 'border-navy text-navy bg-navy/5'
+                    : 'border-slate-200 text-slate-500 hover:border-navy hover:text-navy'
+                  }`}
               >
-                <HiOutlineSearch className="text-lg" />
+                {searchOpen ? <HiX className="text-lg" /> : <HiOutlineSearch className="text-lg" />}
               </button>
               <button
                 aria-label="Cart"
@@ -138,6 +158,32 @@ export default function App() {
                   Corporate Solutions
                 </a>
               </nav>
+            </div>
+          )}
+          {/* Search Overlay */}
+          {searchOpen && (
+            <div className="absolute top-full left-0 right-0 z-40 bg-white border-b border-slate-100 shadow-lg animate-in slide-in-from-top duration-200">
+              <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-4">
+                <form onSubmit={handleSearchSubmit} className="relative max-w-xl mx-auto">
+                  <input
+                    ref={searchRef}
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products (e.g. LuxGear, bottle...)"
+                    className="w-full rounded-full border border-slate-200 px-5 py-3 pl-12 text-sm text-navy placeholder:text-slate-400 focus:border-navy focus:ring-2 focus:ring-navy/20 outline-none transition-all"
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
+                    <HiOutlineSearch className="text-lg" />
+                  </div>
+                  <button
+                    type="submit"
+                    className="absolute inset-y-1.5 right-1.5 rounded-full bg-navy px-5 text-xs font-semibold text-white hover:bg-navy/90 transition-colors"
+                  >
+                    Search
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </header>
