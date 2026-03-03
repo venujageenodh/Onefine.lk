@@ -11,6 +11,7 @@ import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/
 import { useProducts } from './hooks/useProducts';
 import { useCart } from './hooks/useCart';
 import CartDrawer from './components/CartDrawer';
+import CheckoutModal from './components/CheckoutModal';
 import PaymentIcons from './components/PaymentIcons';
 import logo from './assets/onefine-logo.png';
 import heroProducts from './assets/hero-products.png';
@@ -44,6 +45,7 @@ export default function App() {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const searchRef = React.useRef(null);
+  const [checkoutProduct, setCheckoutProduct] = React.useState(null);
 
   React.useEffect(() => {
     if (window.location.hash === '#contact') {
@@ -74,13 +76,18 @@ export default function App() {
   };
 
   const handleBuyNow = (product) => {
-    const msg = `🛍️ *Buy Now – OneFine.lk*\n\n• ${product.name}\n• ${product.price}\n\nPlease confirm my order. Thank you!`;
-    window.open(`https://wa.me/94768121701?text=${encodeURIComponent(msg)}`, '_blank');
+    setCheckoutProduct(product);
   };
 
   return (
     <div className="min-h-screen bg-white text-navy">
       <CartDrawer />
+      {checkoutProduct && (
+        <CheckoutModal
+          product={checkoutProduct}
+          onClose={() => setCheckoutProduct(null)}
+        />
+      )}
       <div>
         <header className="absolute top-0 left-0 right-0 z-30 bg-transparent">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4">
@@ -114,8 +121,8 @@ export default function App() {
                 aria-label="Search"
                 onClick={() => setSearchOpen(!searchOpen)}
                 className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all ${searchOpen
-                    ? 'border-navy text-navy bg-navy/5'
-                    : 'border-slate-200 text-slate-500 hover:border-navy hover:text-navy'
+                  ? 'border-navy text-navy bg-navy/5'
+                  : 'border-slate-200 text-slate-500 hover:border-navy hover:text-navy'
                   }`}
               >
                 {searchOpen ? <HiX className="text-lg" /> : <HiOutlineSearch className="text-lg" />}

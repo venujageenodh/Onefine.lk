@@ -21,6 +21,7 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const Product = require('./models/Product');
+const Order = require('./models/Order');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -266,7 +267,88 @@ app.post('/api/upload', requireAuth, (req, res) => {
   });
 });
 
+// ── Order Routes ──────────────────────────────────────────────────────────────
+
+// POST /api/orders  (public – create a new order)
+app.post('/api/orders', async (req, res) => {
+  try {
+    const {
+      customerName, customerPhone, customerAddress, customerCity,
+      customerNotes, items, subtotal, deliveryCharge, total, paymentMethod,
+    } = req.body;
+
+    if (!customerName || !customerPhone || !customerAddress || !customerCity || !items || !items.length) {
+      return res.status(400).json({ error: 'Missing required order fields' });
+    }
+
+    const order = await Order.create({
+      customerName, customerPhone, customerAddress, customerCity,
+      customerNotes: customerNotes || '',
+      items,
+      subtotal: Number(subtotal),
+      deliveryCharge: Number(deliveryCharge ?? 350),
+      total: Number(total),
+      paymentMethod,
+      paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
+    });
+
+    res.status(201).json({ success: true, orderId: order._id, order });
+  } catch (err) {
+    console.error('❌ Error creating order:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// GET /api/orders  (admin protected)
+app.get('/api/orders', requireAuth, async (_req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/orders/:id/status  (admin protected)
+app.put('/api/orders/:id/status', requireAuth, async (req, res) => {
+  try {
+    const { orderStatus, paymentStatus } = req.body;
+    const update = {};
+    if (orderStatus) update.orderStatus = orderStatus;
+    if (paymentStatus) update.paymentStatus = paymentStatus;
+
+    const order = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/payhere/notify  (PayHere payment notification webhook – public)
+app.post('/api/payhere/notify', async (req, res) => {
+  try {
+    const { order_id, status_code, md5sig, merchant_id, payhere_amount, payhere_currency } = req.body;
+    console.log('💳 PayHere Notify:', { order_id, status_code });
+
+    // status_code: 2 = Success, 0 = Pending, -1 = Cancelled, -2 = Failed, -3 = Charged-Back
+    let paymentStatus = 'Pending';
+    if (status_code === '2') paymentStatus = 'Paid';
+    else if (status_code === '-1' || status_code === '-2') paymentStatus = 'Failed';
+
+    if (order_id) {
+      await Order.findByIdAndUpdate(order_id, { paymentStatus });
+    }
+
+    res.send('OK');
+  } catch (err) {
+    console.error('❌ PayHere notify error:', err.message);
+    res.status(500).send('Error');
+  }
+});
+
 // Error handling middleware for all routes
+
 app.use((err, req, res, next) => {
   console.error('🚨 Global server error:', err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
