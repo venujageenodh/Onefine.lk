@@ -23,6 +23,20 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
 const Collection = require('./models/Collection');
+// New models
+const AdminUser = require('./models/AdminUser');
+const Inventory = require('./models/Inventory');
+const Supplier = require('./models/Supplier');
+
+// New route modules
+const authRoutes = require('./routes/auth');
+const inventoryRoutes = require('./routes/inventory');
+const ordersRoutes = require('./routes/orders');
+const suppliersRoutes = require('./routes/suppliers');
+const quotationsRoutes = require('./routes/quotations');
+const invoicesRoutes = require('./routes/invoices');
+const dashboardRoutes = require('./routes/dashboard');
+const pdfRoutes = require('./routes/pdf');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -391,6 +405,18 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// ── NEW Business System Routes ────────────────────────────────────────────────
+// Mount new route modules (these handle /api/auth/admin-login, /api/admins, etc.)
+app.use('/api/auth', authRoutes);          // multi-admin login + legacy /api/auth/login
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/biz/orders', ordersRoutes);  // new orders (different path to avoid conflict)
+app.use('/api/suppliers', suppliersRoutes);
+app.use('/api/quotations', quotationsRoutes);
+app.use('/api/invoices', invoicesRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/pdf', pdfRoutes);
+
+// ── LEGACY Order Routes (kept for website checkout compat) ─────────────────────
 // GET /api/orders  (admin protected)
 app.get('/api/orders', requireAuth, async (_req, res) => {
   try {

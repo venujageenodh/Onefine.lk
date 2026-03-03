@@ -10,6 +10,8 @@ import AboutUsPage from './AboutUsPage.jsx';
 import ContactPage from './ContactPage.jsx';
 import CheckoutPage from './CheckoutPage.jsx';
 import OrderConfirmationPage from './OrderConfirmationPage.jsx';
+import AdminApp from './admin/AdminApp.jsx';
+import { AdminAuthProvider } from './admin/AdminAuthContext.jsx';
 import { CartProvider } from './hooks/useCart.jsx';
 import './index.css';
 
@@ -21,14 +23,19 @@ if (path === '/luxgear-bottles' || path.startsWith('/luxgear-bottles')) {
 }
 
 let RootComponent = App;
-if (path.includes('/admin/orders')) {
+let useAdminAuth = false;
+
+if (path.startsWith('/biz-admin')) {
+  RootComponent = AdminApp;
+  useAdminAuth = true;
+} else if (path.includes('/admin/orders')) {
   RootComponent = AdminOrdersPage;
 } else if (path.includes('/admin')) {
   RootComponent = AdminDashboard;
 } else if (path.includes('/collection')) {
   RootComponent = CollectionDetailPage;
 } else if (path.includes('/luxgear-bottles')) {
-  RootComponent = LuxgearCategoryPage; // fallback (redirect above handles it)
+  RootComponent = LuxgearCategoryPage;
 } else if (path.includes('/about')) {
   RootComponent = AboutUsPage;
 } else if (path.includes('/contact-us')) {
@@ -43,9 +50,14 @@ if (path.includes('/admin/orders')) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <CartProvider>
-      <RootComponent />
-    </CartProvider>
+    {useAdminAuth ? (
+      <AdminAuthProvider>
+        <RootComponent />
+      </AdminAuthProvider>
+    ) : (
+      <CartProvider>
+        <RootComponent />
+      </CartProvider>
+    )}
   </React.StrictMode>
 );
-
