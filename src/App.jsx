@@ -364,7 +364,7 @@ export default function App() {
             </div>
           </section>
 
-          <section id="contact" className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-16 md:mt-20">
+          <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-16 md:mt-20">
             <div className="rounded-2xl bg-navy px-6 py-8 text-white md:px-8 md:py-10">
               <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -378,16 +378,10 @@ export default function App() {
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <a
-                    href="mailto:onefine.info@gmail.com"
-                    className="rounded-full bg-white px-5 py-2 text-xs font-semibold text-navy shadow-subtle transition hover:-translate-y-0.5"
+                    href="/contact"
+                    className="rounded-full bg-white px-8 py-3 text-sm font-bold text-navy shadow-subtle transition hover:-translate-y-0.5 hover:bg-slate-50"
                   >
-                    onefine.info@gmail.com
-                  </a>
-                  <a
-                    href="tel:+94768121701"
-                    className="rounded-full border border-slate-500 px-5 py-2 text-xs font-semibold text-white/90 transition hover:border-gold hover:text-gold"
-                  >
-                    +94 76 812 1701
+                    Contact Us
                   </a>
                 </div>
               </div>
