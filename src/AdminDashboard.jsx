@@ -118,6 +118,7 @@ export default function AdminDashboard() {
   const [colForm, setColForm] = React.useState({ name: '', slug: '', description: '', coverImage: '' });
   const [editingColId, setEditingColId] = React.useState(null);
   const [colSaving, setColSaving] = React.useState(false);
+  const [colImageUploading, setColImageUploading] = React.useState(false);
   const [localCollections, setLocalCollections] = React.useState([]);
 
   React.useEffect(() => {
@@ -214,12 +215,34 @@ export default function AdminDashboard() {
     const { name, value } = e.target;
     setColForm((prev) => {
       const next = { ...prev, [name]: value };
-      // Auto-generate slug from name
       if (name === 'name' && !editingColId) {
         next.slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
       return next;
     });
+  };
+
+  // Upload cover image for collection
+  const handleColImageChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setColImageUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setColForm((prev) => ({ ...prev, coverImage: url }));
+    } catch {
+      showToast('Cover image upload failed', 'error');
+    } finally {
+      setColImageUploading(false);
+    }
+  };
+
+  // Quick-add brand: switch to Products tab with collection pre-selected
+  const handleQuickAddBrand = (colSlug) => {
+    setForm({ name: '', price: '', image: '', collectionSlug: colSlug, isBestSeller: false });
+    setEditingId(null);
+    setActiveTab('products');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleColSubmit = async (e) => {
@@ -489,10 +512,22 @@ export default function AdminDashboard() {
                       className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-1 focus:ring-gold bg-slate-50/50 resize-none" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Cover Image URL</label>
-                    <input type="text" name="coverImage" value={colForm.coverImage} onChange={handleColChange}
-                      placeholder="https://... or leave blank to use first product image"
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-1 focus:ring-gold bg-slate-50/50" />
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Cover Image</label>
+                    <div className="flex flex-col gap-3">
+                      {colForm.coverImage && (
+                        <div className="h-28 w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
+                          <img src={resolveImageUrl(colForm.coverImage)} alt="Cover preview" className="h-full w-full object-cover" />
+                        </div>
+                      )}
+                      <input type="file" accept="image/*" onChange={handleColImageChange}
+                        className="block w-full text-[11px] text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-navy file:px-4 file:py-1.5 file:text-[11px] file:font-semibold file:text-white hover:file:bg-slate-800" />
+                      {colImageUploading && (
+                        <p className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" /> Uploading cover image…
+                        </p>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[10px] text-slate-400">Upload a cover photo for this collection.</p>
                   </div>
                   <div className="pt-2 flex flex-col gap-2">
                     <button type="submit" disabled={colSaving}
@@ -516,13 +551,19 @@ export default function AdminDashboard() {
                   {localCollections.map((col) => (
                     <div key={col._id} className="rounded-2xl bg-white border border-slate-100 p-5 flex items-start gap-4 shadow-sm">
                       {col.coverImage && (
-                        <img src={col.coverImage} alt={col.name} className="h-16 w-16 rounded-xl object-cover border border-slate-100 flex-shrink-0" />
+                        <img src={resolveImageUrl(col.coverImage)} alt={col.name} className="h-16 w-16 rounded-xl object-cover border border-slate-100 flex-shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-navy">{col.name}</p>
                         <p className="text-[11px] font-mono text-slate-400 mt-0.5">/collection?slug={col.slug}</p>
                         {col.description && <p className="text-xs text-slate-500 mt-1 line-clamp-1">{col.description}</p>}
-                        <div className="mt-2 flex gap-2">
+                        <div className="mt-2 flex gap-3 items-center">
+                          <button
+                            onClick={() => handleQuickAddBrand(col.slug)}
+                            className="inline-flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-[11px] font-semibold text-navy hover:bg-gold-soft transition-colors"
+                          >
+                            + Add Brand
+                          </button>
                           <a href={`/collection?slug=${col.slug}`} target="_blank" rel="noopener noreferrer"
                             className="text-[10px] font-semibold text-gold hover:underline">View ↗</a>
                         </div>
