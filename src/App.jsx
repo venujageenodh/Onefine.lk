@@ -42,6 +42,12 @@ export default function App() {
   const { addToCart, totalItems, setIsOpen, buildWhatsAppMessage } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    if (window.location.hash === '#contact') {
+      window.location.replace('/contact');
+    }
+  }, []);
+
   const handleAddToCart = (product) => {
     addToCart({
       id: product._id,
