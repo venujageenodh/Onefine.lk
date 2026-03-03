@@ -223,6 +223,38 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// POST /api/setup-admins — one-time seed for initial admin accounts
+// Protected by secret key. Self-disabling once AdminUsers exist.
+const bcryptjs = require('bcryptjs');
+app.post('/api/setup-admins', async (req, res) => {
+  const { secret } = req.body;
+  const SETUP_SECRET = process.env.SETUP_SECRET || 'onefine_setup_2024';
+  if (secret !== SETUP_SECRET) return res.status(403).json({ error: 'Invalid setup secret' });
+
+  try {
+    const count = await AdminUser.countDocuments();
+    if (count >= 3) return res.status(200).json({ message: 'Admins already seeded', count });
+
+    const defaultAdmins = [
+      { name: 'OneFine Owner', email: 'owner@onefine.lk', password: 'onefine@owner2024', role: 'OWNER', permissions: ['*'] },
+      { name: 'Sales Admin', email: 'sales@onefine.lk', password: 'onefine@sales2024', role: 'SALES_ADMIN', permissions: [] },
+      { name: 'Inventory Admin', email: 'inventory@onefine.lk', password: 'onefine@inv2024', role: 'INVENTORY_ADMIN', permissions: [] },
+    ];
+
+    const created = [];
+    for (const a of defaultAdmins) {
+      const exists = await AdminUser.findOne({ email: a.email });
+      if (exists) continue;
+      const passwordHash = await bcryptjs.hash(a.password, 12);
+      await AdminUser.create({ name: a.name, email: a.email, passwordHash, role: a.role, permissions: a.permissions, isActive: true });
+      created.push({ email: a.email, role: a.role });
+    }
+    res.json({ success: true, created });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/auth/login
 app.post('/api/auth/login', (req, res) => {
   const { password } = req.body;
