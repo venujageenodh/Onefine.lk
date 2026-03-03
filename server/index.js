@@ -1,16 +1,24 @@
 // Allow IPv4 first for generic DNS issues (safe on Vercel)
 const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
+// Force Google DNS to bypass potential local ISP/router SRV lookup blocks
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (e) {
+  console.warn('⚠️ Could not set custom DNS servers:', e.message);
+}
 
-require('dotenv').config({ path: __dirname + '/.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const Product = require('./models/Product');
 
@@ -25,8 +33,8 @@ if (!MONGODB_URI) {
   console.error('❌ MONGODB_URI is missing from environment variables!');
 }
 
-// Disable buffering globally so queries fail fast if DB is disconnected
-mongoose.set('bufferCommands', false);
+// Enable buffering so Mongoose waits for connection before throwing errors
+mongoose.set('bufferCommands', true);
 
 mongoose
   .connect(MONGODB_URI, {
@@ -97,7 +105,8 @@ app.use(cors({
     /\.loca\.lt$/,
   ],
 }));
-app.use(express.json());
+app.use(express.json({ limit: '30mb' }));
+app.use(express.urlencoded({ limit: '30mb', extended: true }));
 
 // ── File Upload Setup ─────────────────────────────────────────────────────────
 const uploadDir = path.resolve(__dirname, '..', 'uploads');
@@ -114,22 +123,28 @@ try {
   console.warn('⚠️ Could not create uploads directory (expected on serverless):', e.message);
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Fallback to /tmp on Vercel if root is read-only
-    const dest = process.env.VERCEL ? '/tmp/uploads' : uploadDir;
-    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-    cb(null, dest);
-  },
-  filename: (_req, file, cb) => {
-    const safe = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-    cb(null, `${Date.now()}-${safe}`);
+// ── Cloudinary Configuration ───────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'onefine-products',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    public_id: (_req, file) => {
+      const safe = file.originalname.split('.')[0].replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      return `${Date.now()}-${safe}`;
+    },
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 25 * 1024 * 1024 } // Increased to 25MB
 });
 
 app.use('/uploads', express.static(uploadDir));
@@ -193,10 +208,11 @@ app.get('/api/products', async (_req, res) => {
 // POST /api/products  (protected)
 app.post('/api/products', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image } = req.body;
-    const product = await Product.create({ name, price, rating: rating ?? 5, image });
+    const { name, price, rating, image, isBestSeller } = req.body;
+    const product = await Product.create({ name, price, rating: rating ?? 5, image, isBestSeller });
     res.status(201).json(product);
   } catch (err) {
+    console.error('❌ Error creating product:', err.message);
     res.status(400).json({ error: err.message });
   }
 });
@@ -204,10 +220,10 @@ app.post('/api/products', requireAuth, async (req, res) => {
 // PUT /api/products/:id  (protected)
 app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image } = req.body;
+    const { name, price, rating, image, isBestSeller } = req.body;
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, price, rating, image },
+      { name, price, rating, image, isBestSeller },
       { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ error: 'Product not found' });
@@ -229,21 +245,24 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
 });
 
 // POST /api/upload  (protected)
-app.post('/api/upload', requireAuth, (req, res, next) => {
+app.post('/api/upload', requireAuth, (req, res) => {
+  console.log('🚀 Upload request received');
   upload.single('image')(req, res, (err) => {
     if (err instanceof multer.MulterError) {
-      console.error('❌ Multer error:', err);
+      console.error('❌ Multer error:', err.code, err.message);
       return res.status(400).json({ error: `Multer Error: ${err.message}` });
     } else if (err) {
       console.error('❌ Upload error:', err);
       return res.status(500).json({ error: `Server Error: ${err.message}` });
     }
 
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) {
+      console.error('❌ No file in request');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-    console.log('✅ File uploaded successfully:', req.file.filename);
-    const url = `/uploads/${req.file.filename}`;
-    res.json({ url });
+    console.log('✅ File uploaded to Cloudinary Successfully:', req.file.path);
+    res.json({ url: req.file.path });
   });
 });
 

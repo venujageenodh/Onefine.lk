@@ -11,7 +11,8 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 function resolveImageUrl(url) {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${API_BASE}${url}`;
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+  return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
 function RatingStars({ value }) {
@@ -68,11 +69,11 @@ export default function ShopPage() {
                 Home
               </a>
               <span className="text-navy font-semibold">Shop</span>
-              <a href="/luxgear-bottles" className="hover:text-navy transition-colors">
-                LUXGEAR Bottles
-              </a>
               <a href="/about" className="hover:text-navy transition-colors">
                 About Us
+              </a>
+              <a href="/contact" className="hover:text-navy transition-colors">
+                Contact
               </a>
             </nav>
 
@@ -104,8 +105,8 @@ export default function ShopPage() {
               <nav className="flex flex-col gap-4 text-sm font-medium">
                 <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
                 <span className="text-navy font-semibold">Shop</span>
-                <a href="/luxgear-bottles" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">LUXGEAR Bottles</a>
                 <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
+                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
               </nav>
             </div>
           )}
@@ -159,12 +160,12 @@ export default function ShopPage() {
                         key={product._id}
                         className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
                       >
-                        <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl">
+                        <div className="relative w-full aspect-square overflow-hidden bg-slate-100 rounded-t-2xl">
                           {product.image && (
                             <img
                               src={resolveImageUrl(product.image)}
                               alt={product.name}
-                              className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           )}
                         </div>
@@ -231,7 +232,7 @@ export default function ShopPage() {
               <a href="https://www.instagram.com/_.one_.fine_?igsh=ZHZocWd5c3Jxd24w" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-gold hover:text-gold transition-colors">
                 <FaInstagram className="text-[13px]" />
               </a>
-              <a href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-gold hover:text-gold transition-colors">
+              <a href="https://www.linkedin.com/company/onefine-lk" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-gold hover:text-gold transition-colors">
                 <FaLinkedinIn className="text-[13px]" />
               </a>
             </div>
@@ -244,6 +245,7 @@ export default function ShopPage() {
               <li><span className="text-navy font-semibold">Shop</span></li>
               <li><a href="/luxgear-bottles" className="hover:text-navy">LUXGEAR Bottles</a></li>
               <li><a href="/about" className="hover:text-navy">About Us</a></li>
+              <li><a href="/contact" className="hover:text-navy">Contact</a></li>
             </ul>
           </div>
 
@@ -264,8 +266,8 @@ export default function ShopPage() {
         <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
           <p>© {new Date().getFullYear()} OneFine. All rights reserved.</p>
           <div className="flex gap-4">
-            <a href="#" className="hover:text-navy">Privacy Policy</a>
-            <a href="#" className="hover:text-navy">Terms of Service</a>
+            <a href="/privacy" className="hover:text-navy">Privacy Policy</a>
+            <a href="/terms" className="hover:text-navy">Terms of Service</a>
           </div>
         </div>
       </footer>

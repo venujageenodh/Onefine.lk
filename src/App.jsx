@@ -17,7 +17,10 @@ import heroProducts from './assets/hero-products.png';
 
 function resolveImageUrl(url) {
   if (!url) return '';
+  // If it's already a full URL (viva Cloudinary or Unsplash), return it as is
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+  // For legacy local uploads or relative paths
   const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
   return `${base}${url.startsWith('/') ? url : `/${url}`}`;
 }
@@ -74,9 +77,8 @@ export default function App() {
             <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
               <a href="#home" className="hover:text-navy transition-colors">Home</a>
               <a href="#shop" className="hover:text-navy transition-colors">Shop</a>
-              <a href="/luxgear-bottles" className="hover:text-navy transition-colors">LUXGEAR Bottles</a>
               <a href="/about" className="hover:text-navy transition-colors">About Us</a>
-              <a href="#contact" className="hover:text-navy transition-colors">Contact</a>
+              <a href="/contact" className="hover:text-navy transition-colors">Contact</a>
               <a
                 href="#corporate"
                 className="rounded-full border border-slate-200 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-navy hover:border-gold hover:text-gold transition-colors"
@@ -120,9 +122,8 @@ export default function App() {
               <nav className="flex flex-col gap-4 text-sm font-medium">
                 <a href="#home" onClick={() => setMobileMenuOpen(false)} className="text-navy">Home</a>
                 <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
-                <a href="/luxgear-bottles" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">LUXGEAR Bottles</a>
                 <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
-                <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
                 <a
                   href="#corporate"
                   onClick={() => setMobileMenuOpen(false)}
@@ -215,18 +216,21 @@ export default function App() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => {
+              {(products.filter(p => p.isBestSeller).length > 0
+                ? products.filter(p => p.isBestSeller)
+                : products.slice(0, 3)
+              ).map((product) => {
                 const isLuxgear = (product.name || '').toLowerCase().includes('luxgear');
                 return (
                   <article
                     key={product._id}
                     className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
                   >
-                    <div className="relative w-full overflow-hidden bg-slate-100 rounded-t-2xl">
+                    <div className="relative w-full aspect-square overflow-hidden bg-slate-100 rounded-t-2xl">
                       <img
                         src={resolveImageUrl(product.image)}
                         alt={product.name}
-                        className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </div>
                     <div className="flex flex-1 flex-col gap-3 p-4">
@@ -414,7 +418,7 @@ export default function App() {
                   <a href="https://www.instagram.com/_.one_.fine_?igsh=ZHZocWd5c3Jxd24w" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                     <FaInstagram className="text-[13px]" />
                   </a>
-                  <a href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
+                  <a href="https://www.linkedin.com/company/onefine-lk" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                     <FaLinkedinIn className="text-[13px]" />
                   </a>
                 </div>
@@ -427,7 +431,7 @@ export default function App() {
                   <li><a href="#shop" className="hover:text-navy">Shop</a></li>
                   <li><a href="#corporate" className="hover:text-navy">Corporate Solutions</a></li>
                   <li><a href="/about" className="hover:text-navy">About Us</a></li>
-                  <li><a href="#contact" className="hover:text-navy">Contact</a></li>
+                  <li><a href="/contact" className="hover:text-navy">Contact</a></li>
                 </ul>
               </div>
 
@@ -448,8 +452,8 @@ export default function App() {
             <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
               <p>© {new Date().getFullYear()} OneFine. All rights reserved.</p>
               <div className="flex gap-4">
-                <a href="#" className="hover:text-navy">Privacy Policy</a>
-                <a href="#" className="hover:text-navy">Terms of Service</a>
+                <a href="/privacy" className="hover:text-navy">Privacy Policy</a>
+                <a href="/terms" className="hover:text-navy">Terms of Service</a>
               </div>
             </div>
           </footer>

@@ -69,7 +69,7 @@ export function useProducts() {
   }, [fetchProducts]);
 
   // Add product (requires auth token)
-  const addProduct = useCallback(async ({ name, price, rating = 5, image }, token) => {
+  const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller }, token) => {
     const res = await fetch(api('/products'), {
       method: 'POST',
       headers: {
@@ -77,7 +77,7 @@ export function useProducts() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, price, rating, image }),
+      body: JSON.stringify({ name, price, rating, image, isBestSeller }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -121,18 +121,36 @@ export function useProducts() {
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }, []);
 
-  // Upload image (requires auth token)
-  const uploadImage = useCallback(async (file, token) => {
+  // Upload image (direct to Cloudinary to bypass server limits)
+  const uploadImage = useCallback(async (file) => {
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary config missing in .env');
+    }
+
     const formData = new FormData();
-    formData.append('image', file);
-    const res = await fetch(api('/upload'), {
-      method: 'POST',
-      headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    if (!res.ok) throw new Error('Upload failed');
-    const data = await res.json();
-    return data.url;
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || 'Cloudinary upload failed');
+      }
+
+      const data = await res.json();
+      return data.secure_url;
+    } catch (err) {
+      console.error('Cloudinary Direct Upload Error:', err);
+      throw err;
+    }
   }, []);
 
   return {

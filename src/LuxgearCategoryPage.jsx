@@ -54,7 +54,7 @@ export default function LuxgearCategoryPage() {
               <a href="/" className="hover:text-navy transition-colors">Home</a>
               <a href="/shop" className="hover:text-navy transition-colors">Shop</a>
               <a href="/about" className="hover:text-navy transition-colors">About Us</a>
-              <span className="text-navy font-semibold border-b-2 border-gold pb-0.5">LUXGEAR Bottles</span>
+              <a href="/contact" className="hover:text-navy transition-colors">Contact</a>
             </nav>
 
             <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export default function LuxgearCategoryPage() {
                 <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
                 <a href="/shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
                 <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
-                <span className="text-navy font-semibold">LUXGEAR Bottles</span>
+                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
               </nav>
             </div>
           )}
@@ -126,12 +126,12 @@ export default function LuxgearCategoryPage() {
                   className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-soft"
                 >
                   {/* Image area — fixed height for consistency */}
-                  <div className="relative h-56 w-full overflow-hidden bg-slate-50 flex items-center justify-center p-4">
+                  <div className="relative aspect-square w-full overflow-hidden bg-slate-50 flex items-center justify-center p-2">
                     {product.image && (
                       <img
                         src={resolveImageUrl(product.image)}
                         alt={product.name}
-                        className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     )}
                     {/* In stock badge */}
@@ -207,6 +207,7 @@ export default function LuxgearCategoryPage() {
               <li><a href="/shop" className="hover:text-navy">Shop</a></li>
               <li><span className="text-navy font-semibold">LUXGEAR Bottles</span></li>
               <li><a href="/about" className="hover:text-navy">About Us</a></li>
+              <li><a href="/contact" className="hover:text-navy">Contact</a></li>
             </ul>
           </div>
 

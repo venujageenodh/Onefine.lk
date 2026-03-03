@@ -5,6 +5,7 @@ import AdminDashboard from './AdminDashboard.jsx';
 import ShopPage from './ShopPage.jsx';
 import LuxgearCategoryPage from './LuxgearCategoryPage.jsx';
 import AboutUsPage from './AboutUsPage.jsx';
+import ContactPage from './ContactPage.jsx';
 import { CartProvider } from './hooks/useCart.jsx';
 import './index.css';
 
@@ -17,6 +18,8 @@ if (path.includes('/admin')) {
   RootComponent = LuxgearCategoryPage;
 } else if (path.includes('/about')) {
   RootComponent = AboutUsPage;
+} else if (path.includes('/contact')) {
+  RootComponent = ContactPage;
 } else if (path.includes('/shop')) {
   RootComponent = ShopPage;
 }

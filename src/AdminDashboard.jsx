@@ -104,7 +104,7 @@ export default function AdminDashboard() {
   // Detect if we're showing fallback/demo data (server offline)
   const isOffline = Boolean(productsError);
 
-  const [form, setForm] = React.useState({ name: '', price: '', image: '', isLuxgear: false });
+  const [form, setForm] = React.useState({ name: '', price: '', image: '', isLuxgear: false, isBestSeller: false });
   const [editingId, setEditingId] = React.useState(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
     if (!file) return;
     setIsUploading(true);
     try {
-      const url = await uploadImage(file, auth.token);
+      const url = await uploadImage(file);
       setForm((prev) => ({ ...prev, image: url }));
     } catch {
       showToast('Image upload failed', 'error');
@@ -167,10 +167,10 @@ export default function AdminDashboard() {
     setIsSaving(true);
     try {
       if (editingId) {
-        await updateProduct(editingId, { name: finalName, price: form.price, image: form.image.trim() }, auth.token);
+        await updateProduct(editingId, { name: finalName, price: form.price, image: form.image.trim(), isBestSeller: form.isBestSeller }, auth.token);
         showToast('Product updated!');
       } else {
-        await addProduct({ name: finalName, price: form.price, image: form.image.trim() }, auth.token);
+        await addProduct({ name: finalName, price: form.price, image: form.image.trim(), isBestSeller: form.isBestSeller }, auth.token);
         showToast('Product added!');
       }
       setEditingId(null);
@@ -198,7 +198,8 @@ export default function AdminDashboard() {
       name: product.name,
       price: formatPrice(extractNumeric(product.price)),
       image: product.image,
-      isLuxgear: isLuxgear
+      isLuxgear: isLuxgear,
+      isBestSeller: product.isBestSeller || false
     });
     setEditingId(product._id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -296,6 +297,20 @@ export default function AdminDashboard() {
                   />
                   <label htmlFor="isLuxgear" className="text-xs font-medium text-navy cursor-pointer">
                     Identify as LUXGEAR Bottle
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl border border-gold/10 bg-gold/5 p-3">
+                  <input
+                    type="checkbox"
+                    id="isBestSeller"
+                    name="isBestSeller"
+                    checked={form.isBestSeller}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded border-slate-300 text-gold focus:ring-gold"
+                  />
+                  <label htmlFor="isBestSeller" className="text-xs font-bold text-navy cursor-pointer flex items-center gap-1.5">
+                    ✨ Featured as Best Seller
                   </label>
                 </div>
 
@@ -412,12 +427,12 @@ export default function AdminDashboard() {
 function ProductCard({ product, onEdit, onDelete, isOffline }) {
   return (
     <article className="flex flex-col group overflow-hidden rounded-xl border border-slate-100 bg-white hover:shadow-soft transition-all">
-      <div className="relative h-40 w-full overflow-hidden bg-slate-50">
+      <div className="relative aspect-square w-full overflow-hidden bg-slate-50">
         {product.image && (
           <img
             src={resolveImageUrl(product.image)}
             alt={product.name}
-            className="h-full w-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         )}
         <div className="absolute top-2 right-2">

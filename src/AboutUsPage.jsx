@@ -29,7 +29,7 @@ export default function AboutUsPage() {
                             <a href="/" className="hover:text-navy transition-colors">Home</a>
                             <a href="/shop" className="hover:text-navy transition-colors">Shop</a>
                             <span className="text-navy font-semibold">About Us</span>
-                            <a href="/#contact" className="hover:text-navy transition-colors">Contact</a>
+                            <a href="/contact" className="hover:text-navy transition-colors">Contact</a>
                         </nav>
                         <div className="flex items-center gap-3">
                             <button aria-label="Search" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-all">
@@ -57,7 +57,7 @@ export default function AboutUsPage() {
                                 <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
                                 <a href="/shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
                                 <span className="text-navy font-semibold">About Us</span>
-                                <a href="/#contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
                             </nav>
                         </div>
                     )}
@@ -154,7 +154,7 @@ export default function AboutUsPage() {
                                 <a href="https://www.instagram.com/_.one_.fine_?igsh=ZHZocWd5c3Jxd24w" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                                     <FaInstagram className="text-[13px]" />
                                 </a>
-                                <a href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
+                                <a href="https://www.linkedin.com/company/onefine-lk" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-colors">
                                     <FaLinkedinIn className="text-[13px]" />
                                 </a>
                             </div>
@@ -167,7 +167,7 @@ export default function AboutUsPage() {
                                 <li><a href="/shop" className="hover:text-navy">Shop</a></li>
                                 <li><a href="/#corporate" className="hover:text-navy">Corporate Solutions</a></li>
                                 <li><a href="/about" className="hover:text-navy">About Us</a></li>
-                                <li><a href="/#contact" className="hover:text-navy">Contact</a></li>
+                                <li><a href="/contact" className="hover:text-navy">Contact</a></li>
                             </ul>
                         </div>
 
@@ -188,8 +188,8 @@ export default function AboutUsPage() {
                     <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
                         <p>© {new Date().getFullYear()} OneFine. All rights reserved.</p>
                         <div className="flex gap-4">
-                            <a href="#" className="hover:text-navy">Privacy Policy</a>
-                            <a href="#" className="hover:text-navy">Terms of Service</a>
+                            <a href="/privacy" className="hover:text-navy">Privacy Policy</a>
+                            <a href="/terms" className="hover:text-navy">Terms of Service</a>
                         </div>
                     </div>
                 </footer>
