@@ -53,10 +53,26 @@ export default function ShopPage() {
   };
 
   const filteredProducts = useMemo(() => {
-    if (!query) return products;
+    // Exclude luxgear items — they are represented by the LUXGEAR collection card
+    const nonLuxgear = products.filter(
+      (p) => !(p.name || '').toLowerCase().includes('luxgear')
+    );
+    if (!query) return nonLuxgear;
     const q = query.trim().toLowerCase();
-    return products.filter((p) => (p.name || '').toLowerCase().includes(q));
+    return nonLuxgear.filter((p) => (p.name || '').toLowerCase().includes(q));
   }, [products, query]);
+
+  // Does the store have any luxgear items? (used to show LUXGEAR card)
+  const hasLuxgear = useMemo(
+    () => products.some((p) => (p.name || '').toLowerCase().includes('luxgear')),
+    [products]
+  );
+
+  // Pick a representative luxgear image for the collection card
+  const luxgearImage = useMemo(() => {
+    const first = products.find((p) => (p.name || '').toLowerCase().includes('luxgear'));
+    return first?.image || '';
+  }, [products]);
 
   return (
     <div className="min-h-screen bg-white text-navy">
@@ -171,71 +187,85 @@ export default function ShopPage() {
                 </div>
 
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredProducts.map((product) => {
-                    const isLuxgear =
-                      product.name && product.name.toLowerCase().includes('luxgear bottle');
+                  {/* ── LUXGEAR Collection Card (always pinned first) ── */}
+                  {(hasLuxgear || true) && !query && (
+                    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft border border-gold/20">
+                      <a href="/luxgear-bottles" className="block relative w-full aspect-square overflow-hidden bg-gradient-to-br from-navy/5 to-gold/10 rounded-t-2xl">
+                        {luxgearImage ? (
+                          <img
+                            src={resolveImageUrl(luxgearImage)}
+                            alt="LUXGEAR Bottles"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="font-display text-4xl text-gold/30">LG</span>
+                          </div>
+                        )}
+                        <span className="absolute top-3 left-3 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy shadow-sm">
+                          Collection
+                        </span>
+                      </a>
+                      <div className="flex flex-1 flex-col gap-3 p-4">
+                        <div className="space-y-1">
+                          <h2 className="font-medium text-sm text-navy">LUXGEAR — Brand Bottles</h2>
+                          <p className="text-xs text-slate-500">Custom-branded insulated bottles for leading brands</p>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <RatingStars value={5} />
+                          <span>Multiple brands</span>
+                        </div>
+                        <a
+                          href="/luxgear-bottles"
+                          className="mt-auto inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
+                        >
+                          View All Brands →
+                        </a>
+                      </div>
+                    </article>
+                  )}
 
-                    return (
-                      <article
-                        key={product._id}
-                        className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
-                      >
-                        <div className="relative w-full aspect-square overflow-hidden bg-slate-100 rounded-t-2xl">
-                          {product.image && (
-                            <img
-                              src={resolveImageUrl(product.image)}
-                              alt={product.name}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                          )}
+                  {/* ── General Products ── */}
+                  {filteredProducts.map((product) => (
+                    <article
+                      key={product._id}
+                      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
+                    >
+                      <div className="relative w-full aspect-square overflow-hidden bg-slate-100 rounded-t-2xl">
+                        {product.image && (
+                          <img
+                            src={resolveImageUrl(product.image)}
+                            alt={product.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        )}
+                      </div>
+                      <div className="flex flex-1 flex-col gap-3 p-4">
+                        <div className="space-y-1">
+                          <h2 className="font-medium text-sm text-navy">{product.name}</h2>
+                          <p className="text-sm font-semibold text-navy">{product.price}</p>
                         </div>
-                        <div className="flex flex-1 flex-col gap-3 p-4">
-                          <div className="space-y-1">
-                            <h2 className="font-medium text-sm text-navy">
-                              {isLuxgear ? (
-                                <a
-                                  href="/luxgear-bottles"
-                                  className="hover:text-gold transition-colors"
-                                >
-                                  {product.name}
-                                </a>
-                              ) : (
-                                product.name
-                              )}
-                            </h2>
-                            <p className="text-sm font-semibold text-navy">{product.price}</p>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <RatingStars value={product.rating ?? 5} />
-                            <span>Made to order</span>
-                          </div>
-                          {isLuxgear ? (
-                            <a
-                              href="/luxgear-bottles"
-                              className="mt-2 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
-                            >
-                              Shop Now
-                            </a>
-                          ) : (
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                onClick={() => handleAddToCart(product)}
-                                className="flex-1 inline-flex items-center justify-center rounded-full border border-navy px-3 py-2 text-xs font-semibold text-navy transition-all hover:bg-navy hover:text-white hover:-translate-y-0.5"
-                              >
-                                Add to Cart
-                              </button>
-                              <button
-                                onClick={() => handleBuyNow(product)}
-                                className="flex-1 inline-flex items-center justify-center rounded-full bg-gold px-3 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
-                              >
-                                Buy Now
-                              </button>
-                            </div>
-                          )}
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <RatingStars value={product.rating ?? 5} />
+                          <span>Made to order</span>
                         </div>
-                      </article>
-                    );
-                  })}
+                        <div className="mt-auto flex gap-2">
+                          <button
+                            onClick={() => handleAddToCart(product)}
+                            className="flex-1 inline-flex items-center justify-center rounded-full border border-navy px-3 py-2 text-xs font-semibold text-navy transition-all hover:bg-navy hover:text-white hover:-translate-y-0.5"
+                          >
+                            Add to Cart
+                          </button>
+                          <button
+                            onClick={() => handleBuyNow(product)}
+                            className="flex-1 inline-flex items-center justify-center rounded-full bg-gold px-3 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
+                          >
+                            Buy Now
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </>
             )}

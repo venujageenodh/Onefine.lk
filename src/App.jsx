@@ -275,61 +275,91 @@ export default function App() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {(products.filter(p => p.isBestSeller).length > 0
-                ? products.filter(p => p.isBestSeller)
-                : products.slice(0, 3)
-              ).map((product) => {
-                const isLuxgear = (product.name || '').toLowerCase().includes('luxgear');
+              {/* LUXGEAR Collection Card - always first */}
+              {(() => {
+                const luxFirst = products.find(p => (p.name || '').toLowerCase().includes('luxgear'));
                 return (
-                  <article
-                    key={product._id}
-                    className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
-                  >
-                    <div className="relative w-full aspect-square overflow-hidden bg-slate-100 rounded-t-2xl">
-                      <img
-                        src={resolveImageUrl(product.image)}
-                        alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="flex flex-1 flex-col gap-3 p-4">
-                      <div className="space-y-1">
-                        <h3 className="font-medium text-sm text-navy">{product.name}</h3>
-                        <p className="text-sm font-semibold text-navy">{product.price}</p>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <RatingStars value={product.rating} />
-                        <span>In stock</span>
-                      </div>
-                      {isLuxgear ? (
-                        <div className="mt-auto flex gap-2">
-                          <a
-                            href="/luxgear-bottles"
-                            className="flex-1 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
-                          >
-                            Shop Now
-                          </a>
-                        </div>
+                  <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft border border-gold/20">
+                    <a href="/luxgear-bottles" className="block relative w-full aspect-square overflow-hidden bg-gradient-to-br from-navy/5 to-gold/10 rounded-t-2xl">
+                      {luxFirst?.image ? (
+                        <img
+                          src={resolveImageUrl(luxFirst.image)}
+                          alt="LUXGEAR Bottles"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
                       ) : (
-                        <div className="mt-auto flex gap-2">
-                          <button
-                            onClick={() => handleAddToCart(product)}
-                            className="flex-1 inline-flex items-center justify-center rounded-full border border-navy px-4 py-2 text-xs font-semibold text-navy transition-all hover:bg-navy hover:text-white hover:-translate-y-0.5"
-                          >
-                            Add to Cart
-                          </button>
-                          <button
-                            onClick={() => handleBuyNow(product)}
-                            className="flex-1 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
-                          >
-                            Buy Now
-                          </button>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="font-display text-5xl text-gold/20">LG</span>
                         </div>
                       )}
+                      <span className="absolute top-3 left-3 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-navy shadow-sm">
+                        Collection
+                      </span>
+                    </a>
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div className="space-y-1">
+                        <h3 className="font-medium text-sm text-navy">LUXGEAR — Brand Bottles</h3>
+                        <p className="text-xs text-slate-500">Custom-branded insulated bottles for leading brands</p>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <RatingStars value={5} />
+                        <span>Multiple brands</span>
+                      </div>
+                      <div className="mt-auto">
+                        <a
+                          href="/luxgear-bottles"
+                          className="inline-flex w-full items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
+                        >
+                          View All Brands →
+                        </a>
+                      </div>
                     </div>
                   </article>
-                )
-              })}
+                );
+              })()}
+
+              {/* Non-luxgear best sellers (up to 2 more cards) */}
+              {(products.filter(p => p.isBestSeller && !(p.name || '').toLowerCase().includes('luxgear')).length > 0
+                ? products.filter(p => p.isBestSeller && !(p.name || '').toLowerCase().includes('luxgear'))
+                : products.filter(p => !(p.name || '').toLowerCase().includes('luxgear')).slice(0, 2)
+              ).map((product) => (
+                <article
+                  key={product._id}
+                  className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-transform hover:-translate-y-1 hover:shadow-soft"
+                >
+                  <div className="relative w-full aspect-square overflow-hidden bg-slate-100 rounded-t-2xl">
+                    <img
+                      src={resolveImageUrl(product.image)}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-3 p-4">
+                    <div className="space-y-1">
+                      <h3 className="font-medium text-sm text-navy">{product.name}</h3>
+                      <p className="text-sm font-semibold text-navy">{product.price}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <RatingStars value={product.rating} />
+                      <span>In stock</span>
+                    </div>
+                    <div className="mt-auto flex gap-2">
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="flex-1 inline-flex items-center justify-center rounded-full border border-navy px-4 py-2 text-xs font-semibold text-navy transition-all hover:bg-navy hover:text-white hover:-translate-y-0.5"
+                      >
+                        Add to Cart
+                      </button>
+                      <button
+                        onClick={() => handleBuyNow(product)}
+                        className="flex-1 inline-flex items-center justify-center rounded-full bg-gold px-4 py-2 text-xs font-semibold text-navy shadow-subtle transition-all hover:bg-gold-soft hover:-translate-y-0.5"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
 
