@@ -54,7 +54,7 @@ export default function LuxgearCategoryPage() {
               <a href="/" className="hover:text-navy transition-colors">Home</a>
               <a href="/shop" className="hover:text-navy transition-colors">Shop</a>
               <a href="/about" className="hover:text-navy transition-colors">About Us</a>
-              <a href="/contact" className="hover:text-navy transition-colors">Contact</a>
+              <a href="/contact-us" className="hover:text-navy transition-colors">Contact</a>
             </nav>
 
             <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export default function LuxgearCategoryPage() {
                 <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
                 <a href="/shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
                 <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
-                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                <a href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
               </nav>
             </div>
           )}
@@ -207,7 +207,7 @@ export default function LuxgearCategoryPage() {
               <li><a href="/shop" className="hover:text-navy">Shop</a></li>
               <li><span className="text-navy font-semibold">LUXGEAR Bottles</span></li>
               <li><a href="/about" className="hover:text-navy">About Us</a></li>
-              <li><a href="/contact" className="hover:text-navy">Contact</a></li>
+              <li><a href="/contact-us" className="hover:text-navy">Contact</a></li>
             </ul>
           </div>
 

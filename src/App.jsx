@@ -44,7 +44,7 @@ export default function App() {
 
   React.useEffect(() => {
     if (window.location.hash === '#contact') {
-      window.location.replace('/contact');
+      window.location.replace('/contact-us');
     }
   }, []);
 
@@ -84,7 +84,7 @@ export default function App() {
               <a href="#home" className="hover:text-navy transition-colors">Home</a>
               <a href="#shop" className="hover:text-navy transition-colors">Shop</a>
               <a href="/about" className="hover:text-navy transition-colors">About Us</a>
-              <a href="/contact" className="hover:text-navy transition-colors">Contact</a>
+              <a href="/contact-us" className="hover:text-navy transition-colors">Contact</a>
               <a
                 href="#corporate"
                 className="rounded-full border border-slate-200 px-4 py-1.5 text-xs uppercase tracking-[0.18em] text-navy hover:border-gold hover:text-gold transition-colors"
@@ -129,7 +129,7 @@ export default function App() {
                 <a href="#home" onClick={() => setMobileMenuOpen(false)} className="text-navy">Home</a>
                 <a href="#shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
                 <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
-                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                <a href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
                 <a
                   href="#corporate"
                   onClick={() => setMobileMenuOpen(false)}
@@ -384,7 +384,7 @@ export default function App() {
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <a
-                    href="/contact"
+                    href="/contact-us"
                     className="rounded-full bg-white px-8 py-3 text-sm font-bold text-navy shadow-subtle transition hover:-translate-y-0.5 hover:bg-slate-50"
                   >
                     Contact Us
@@ -431,7 +431,7 @@ export default function App() {
                   <li><a href="#shop" className="hover:text-navy">Shop</a></li>
                   <li><a href="#corporate" className="hover:text-navy">Corporate Solutions</a></li>
                   <li><a href="/about" className="hover:text-navy">About Us</a></li>
-                  <li><a href="/contact" className="hover:text-navy">Contact</a></li>
+                  <li><a href="/contact-us" className="hover:text-navy">Contact</a></li>
                 </ul>
               </div>
 

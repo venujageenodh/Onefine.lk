@@ -18,7 +18,7 @@ if (path.includes('/admin')) {
   RootComponent = LuxgearCategoryPage;
 } else if (path.includes('/about')) {
   RootComponent = AboutUsPage;
-} else if (path.includes('/contact')) {
+} else if (path.includes('/contact-us')) {
   RootComponent = ContactPage;
 } else if (path.includes('/shop')) {
   RootComponent = ShopPage;

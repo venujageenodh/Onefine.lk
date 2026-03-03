@@ -29,7 +29,7 @@ export default function AboutUsPage() {
                             <a href="/" className="hover:text-navy transition-colors">Home</a>
                             <a href="/shop" className="hover:text-navy transition-colors">Shop</a>
                             <span className="text-navy font-semibold">About Us</span>
-                            <a href="/contact" className="hover:text-navy transition-colors">Contact</a>
+                            <a href="/contact-us" className="hover:text-navy transition-colors">Contact</a>
                         </nav>
                         <div className="flex items-center gap-3">
                             <button aria-label="Search" className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-navy hover:text-navy transition-all">
@@ -57,7 +57,7 @@ export default function AboutUsPage() {
                                 <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
                                 <a href="/shop" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Shop</a>
                                 <span className="text-navy font-semibold">About Us</span>
-                                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                                <a href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
                             </nav>
                         </div>
                     )}
@@ -167,7 +167,7 @@ export default function AboutUsPage() {
                                 <li><a href="/shop" className="hover:text-navy">Shop</a></li>
                                 <li><a href="/#corporate" className="hover:text-navy">Corporate Solutions</a></li>
                                 <li><a href="/about" className="hover:text-navy">About Us</a></li>
-                                <li><a href="/contact" className="hover:text-navy">Contact</a></li>
+                                <li><a href="/contact-us" className="hover:text-navy">Contact</a></li>
                             </ul>
                         </div>
 

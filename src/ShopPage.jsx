@@ -72,7 +72,7 @@ export default function ShopPage() {
               <a href="/about" className="hover:text-navy transition-colors">
                 About Us
               </a>
-              <a href="/contact" className="hover:text-navy transition-colors">
+              <a href="/contact-us" className="hover:text-navy transition-colors">
                 Contact
               </a>
             </nav>
@@ -106,7 +106,7 @@ export default function ShopPage() {
                 <a href="/" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Home</a>
                 <span className="text-navy font-semibold">Shop</span>
                 <a href="/about" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">About Us</a>
-                <a href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
+                <a href="/contact-us" onClick={() => setMobileMenuOpen(false)} className="text-slate-600">Contact</a>
               </nav>
             </div>
           )}
@@ -245,7 +245,7 @@ export default function ShopPage() {
               <li><span className="text-navy font-semibold">Shop</span></li>
               <li><a href="/luxgear-bottles" className="hover:text-navy">LUXGEAR Bottles</a></li>
               <li><a href="/about" className="hover:text-navy">About Us</a></li>
-              <li><a href="/contact" className="hover:text-navy">Contact</a></li>
+              <li><a href="/contact-us" className="hover:text-navy">Contact</a></li>
             </ul>
           </div>
 
