@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
-
-let cachedCollections = null;
+function apiUrl(path) {
+    const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+    return `${base}/api${path.startsWith('/') ? path : `/${path}`}`;
+}
 
 export function useCollections() {
-    const [collections, setCollections] = useState(cachedCollections || []);
-    const [loading, setLoading] = useState(!cachedCollections);
+    const [collections, setCollections] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (cachedCollections) return;
-        fetch(`${API_BASE}/collections`)
+        fetch(apiUrl('/collections'))
             .then((r) => r.json())
-            .then((data) => {
-                cachedCollections = Array.isArray(data) ? data : [];
-                setCollections(cachedCollections);
-            })
+            .then((data) => setCollections(Array.isArray(data) ? data : []))
             .catch(() => setCollections([]))
             .finally(() => setLoading(false));
     }, []);

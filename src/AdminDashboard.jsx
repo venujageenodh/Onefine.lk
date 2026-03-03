@@ -4,7 +4,11 @@ import { useCollections } from './hooks/useCollections';
 import { useAuth } from './hooks/useAuth';
 import logo from './assets/onefine-logo.png';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// Build full API URL — same logic as useProducts/useAuth hooks
+function apiUrl(path) {
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+  return `${base}/api${path.startsWith('/') ? path : `/${path}`}`;
+}
 
 // Resolve image URL — handles both absolute URLs and relative /uploads/ paths
 function resolveImageUrl(url) {
@@ -252,8 +256,8 @@ export default function AdminDashboard() {
     try {
       const method = editingColId ? 'PUT' : 'POST';
       const url = editingColId
-        ? `${API_BASE}/collections/${editingColId}`
-        : `${API_BASE}/collections`;
+        ? apiUrl(`/collections/${editingColId}`)
+        : apiUrl('/collections');
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
@@ -286,7 +290,7 @@ export default function AdminDashboard() {
   const handleColDelete = async (id) => {
     if (!window.confirm('Delete this collection?')) return;
     try {
-      const res = await fetch(`${API_BASE}/collections/${id}`, {
+      const res = await fetch(apiUrl(`/collections/${id}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${auth.token}` },
       });
