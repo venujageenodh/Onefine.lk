@@ -6,7 +6,7 @@ const Product = require('../models/Product');
 const { requireAdminAuth, requirePermission } = require('../middleware/auth');
 
 // Helper: adjust inventory and record movement
-async function adjustStock({ productId, type, qty, reason, orderId, supplierId, adminId }) {
+async function adjustStock({ productId, type, qty, reason, orderId, supplierId, adminId, unitCost }) {
     let inv = await Inventory.findOne({ productId });
     if (!inv) inv = await Inventory.create({ productId, stockQty: 0, minStockQty: 5 });
 
@@ -17,7 +17,14 @@ async function adjustStock({ productId, type, qty, reason, orderId, supplierId, 
     const qtyAfter = inv.stockQty;
     await inv.save();
 
-    await StockMovement.create({ productId, type, qty, qtyBefore, qtyAfter, reason, orderId, supplierId, adminId });
+    const totalCost = (unitCost || 0) * qty;
+    await StockMovement.create({ productId, type, qty, qtyBefore, qtyAfter, reason, orderId, supplierId, adminId, unitCost, totalCost });
+
+    // Auto-update Product costPrice on IN movement if unitCost is provided
+    if (type === 'IN' && unitCost !== undefined) {
+        await Product.findByIdAndUpdate(productId, { costPrice: unitCost });
+    }
+
     return inv;
 }
 
@@ -82,13 +89,14 @@ router.put('/:productId', requireAdminAuth, requirePermission('inventory.edit'),
 // POST /api/inventory/stock-in — receive stock from supplier
 router.post('/stock-in', requireAdminAuth, requirePermission('inventory.edit'), async (req, res) => {
     try {
-        const { productId, qty, supplierId, reason, costPrice } = req.body;
+        const { productId, qty, supplierId, reason, unitCost } = req.body;
         if (!productId || !qty) return res.status(400).json({ error: 'productId and qty required' });
 
         const inv = await adjustStock({
             productId, type: 'IN', qty: Number(qty),
             reason: reason || `Stock received from supplier`,
             supplierId, adminId: req.admin._id,
+            unitCost: unitCost !== undefined && unitCost !== '' ? Number(unitCost) : undefined
         });
 
         // Optionally update product costPrice
