@@ -112,7 +112,7 @@ export default function InventoryPage() {
                                                         <span>{inv.minStockQty ?? 5}</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 font-semibold text-slate-700">{item.costPrice ? formatLKR(item.costPrice) : '—'}</td>
+                                                <td className="px-4 py-3 font-semibold text-slate-700">{(item.costPrice != null && item.costPrice !== '') ? formatLKR(item.costPrice) : '—'}</td>
                                                 <td className="px-4 py-3">
                                                     {isLow ? (
                                                         <span className="rounded-full bg-red-100 text-red-600 px-2 py-0.5 text-[10px] font-bold uppercase">Low</span>
@@ -219,8 +219,8 @@ export default function InventoryPage() {
                                                     <td className="px-4 py-3 text-xs text-slate-500">{new Date(m.createdAt).toLocaleDateString()}</td>
                                                     <td className="px-4 py-3 text-xs font-bold text-slate-700">{m.type}</td>
                                                     <td className="px-4 py-3 font-semibold text-green-600">+{m.qty}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{m.unitCost ? formatLKR(m.unitCost) : '—'}</td>
-                                                    <td className="px-4 py-3 font-medium text-slate-800">{m.totalCost ? formatLKR(m.totalCost) : '—'}</td>
+                                                    <td className="px-4 py-3 text-slate-600">{(m.unitCost != null && m.unitCost !== '') ? formatLKR(m.unitCost) : '—'}</td>
+                                                    <td className="px-4 py-3 font-medium text-slate-800">{(m.totalCost != null && m.totalCost !== '') ? formatLKR(m.totalCost) : '—'}</td>
                                                     <td className="px-4 py-3 text-xs text-slate-400 max-w-[200px] truncate">{m.reason || '—'}</td>
                                                 </tr>
                                             ))}
