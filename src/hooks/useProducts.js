@@ -47,11 +47,15 @@ export function useProducts() {
   }, []);
 
   // Fetch all products from API
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (token) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(api('/products'), { headers: baseHeaders() });
+      const endpoint = token ? '/admin/products' : '/products';
+      const headers = { ...baseHeaders() };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(api(endpoint), { headers });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setProducts(data.length > 0 ? data : defaultProducts);

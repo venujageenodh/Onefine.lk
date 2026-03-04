@@ -24,7 +24,7 @@ async function adjustStock({ productId, type, qty, reason, orderId, supplierId, 
 // GET /api/inventory — all products with their inventory
 router.get('/', requireAdminAuth, requirePermission('inventory.view'), async (req, res) => {
     try {
-        const products = await Product.find({ isActive: true }).lean();
+        const products = await Product.find({ isActive: { $ne: false } }).lean();
         const inventories = await Inventory.find().lean();
         const invMap = {};
         inventories.forEach(i => { invMap[i.productId.toString()] = i; });

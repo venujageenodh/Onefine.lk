@@ -103,16 +103,17 @@ function LoginScreen({ onLogin }) {
 }
 
 // ── Admin Dashboard ───────────────────────────────────────────────────────────
-export default function AdminDashboard() {
+export default function AdminDashboard({ embeddedMode = false }) {
   const auth = useAuth();
+  const tokenToUse = auth?.token || sessionStorage.getItem('adminToken');
   const { products, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, uploadImage } =
-    useProducts();
+    useProducts(tokenToUse);
   const { collections, loading: colLoading } = useCollections();
 
   const isOffline = Boolean(productsError);
 
   const [activeTab, setActiveTab] = React.useState('products'); // 'products' | 'collections'
-  const [form, setForm] = React.useState({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false });
+  const [form, setForm] = React.useState({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true });
   const [editingId, setEditingId] = React.useState(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -402,10 +403,18 @@ export default function AdminDashboard() {
                     <p className="mt-1 text-[10px] text-slate-400">Products in a collection appear on the collection brand page.</p>
                   </div>
 
-                  <div className="flex items-center gap-3 rounded-xl border border-gold/10 bg-gold/5 p-3">
-                    <input type="checkbox" id="isBestSeller" name="isBestSeller" checked={form.isBestSeller} onChange={handleChange}
-                      className="h-4 w-4 rounded border-slate-300 text-gold focus:ring-gold" />
-                    <label htmlFor="isBestSeller" className="text-xs font-bold text-navy cursor-pointer">✨ Featured as Best Seller</label>
+                  <div className="flex gap-4">
+                    <div className="flex flex-1 items-center gap-3 rounded-xl border border-gold/10 bg-gold/5 p-3">
+                      <input type="checkbox" id="isBestSeller" name="isBestSeller" checked={form.isBestSeller} onChange={handleChange}
+                        className="h-4 w-4 rounded border-slate-300 text-gold focus:ring-gold" />
+                      <label htmlFor="isBestSeller" className="text-xs font-bold text-navy cursor-pointer">✨ Featured Best Seller</label>
+                    </div>
+
+                    <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <input type="checkbox" id="isPublic" name="isPublic" checked={form.isPublic} onChange={handleChange}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600" />
+                      <label htmlFor="isPublic" className="text-xs font-bold text-slate-700 cursor-pointer">👁️ Show on Store</label>
+                    </div>
                   </div>
 
                   <div>
@@ -598,9 +607,14 @@ function ProductCard({ product, onEdit, onDelete, resolveImageUrl }) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-xs text-navy truncate">{product.name}</p>
         <p className="text-xs text-slate-500 mt-0.5">{product.price}</p>
-        {product.collectionSlug && (
-          <span className="mt-1 inline-block rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-navy">{product.collectionSlug}</span>
-        )}
+        <div className="flex flex-wrap gap-1 mt-1">
+          {product.collectionSlug && (
+            <span className="inline-block rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-navy">{product.collectionSlug}</span>
+          )}
+          {product.isPublic === false && (
+            <span className="inline-block rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">👁️ Hidden from Store</span>
+          )}
+        </div>
       </div>
       <div className="flex gap-1.5 flex-shrink-0">
         <button onClick={() => onEdit(product)} className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-600 hover:border-navy hover:text-navy">Edit</button>

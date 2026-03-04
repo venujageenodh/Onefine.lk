@@ -15,6 +15,7 @@ const productSchema = new mongoose.Schema({
     isBestSeller: { type: Boolean, default: false },
     codAllowed: { type: Boolean, default: true },
     collectionSlug: { type: String, default: '' },
+    isPublic: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 

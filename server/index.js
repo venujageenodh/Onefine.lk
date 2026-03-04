@@ -266,10 +266,23 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // ── Product Routes ────────────────────────────────────────────────────────────
-// GET /api/products  (public)
+// GET /api/products  (public storefront)
 app.get('/api/products', async (_req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await Product.find({
+      isPublic: { $ne: false },
+      isActive: { $ne: false }
+    }).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/products (protected)
+app.get('/api/admin/products', requireAuth, async (_req, res) => {
+  try {
+    const products = await Product.find({ isActive: { $ne: false } }).sort({ createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -279,8 +292,9 @@ app.get('/api/products', async (_req, res) => {
 // POST /api/products  (protected)
 app.post('/api/products', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image, isBestSeller } = req.body;
-    const product = await Product.create({ name, price, rating: rating ?? 5, image, isBestSeller });
+    const { name, price, rating, image, isBestSeller, isPublic, collectionSlug } = req.body;
+    const isPublicVal = isPublic !== undefined ? isPublic : true;
+    const product = await Product.create({ name, price, rating: rating ?? 5, image, isBestSeller, isPublic: isPublicVal, collectionSlug });
     res.status(201).json(product);
   } catch (err) {
     console.error('❌ Error creating product:', err.message);
@@ -291,10 +305,13 @@ app.post('/api/products', requireAuth, async (req, res) => {
 // PUT /api/products/:id  (protected)
 app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image, isBestSeller, collectionSlug } = req.body;
+    const { name, price, rating, image, isBestSeller, collectionSlug, isPublic } = req.body;
+    const updates = { name, price, rating, image, isBestSeller, collectionSlug };
+    if (isPublic !== undefined) updates.isPublic = isPublic;
+
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, price, rating, image, isBestSeller, collectionSlug },
+      updates,
       { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ error: 'Product not found' });
