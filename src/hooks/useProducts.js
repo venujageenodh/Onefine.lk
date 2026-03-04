@@ -130,8 +130,8 @@ export function useProducts() {
 
   // Upload image (direct to Cloudinary to bypass server limits)
   const uploadImage = useCallback(async (file) => {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME?.trim();
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.trim();
 
     if (!cloudName || !uploadPreset) {
       throw new Error('Cloudinary config missing in .env');
