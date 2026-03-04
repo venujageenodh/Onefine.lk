@@ -73,7 +73,7 @@ export function useProducts() {
   }, [fetchProducts]);
 
   // Add product (requires auth token)
-  const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller, collectionSlug }, token) => {
+  const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller, isPublic, collectionSlug }, token) => {
     const res = await fetch(api('/products'), {
       method: 'POST',
       headers: {
@@ -81,7 +81,7 @@ export function useProducts() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, price, rating, image, isBestSeller, collectionSlug: collectionSlug || '' }),
+      body: JSON.stringify({ name, price, rating, image, isBestSeller, isPublic, collectionSlug: collectionSlug || '' }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -107,6 +107,7 @@ export function useProducts() {
         rating: updates.rating ?? 5,
         image: updates.image,
         isBestSeller: updates.isBestSeller,
+        isPublic: updates.isPublic,
         collectionSlug: updates.collectionSlug || '',
       }),
     });
