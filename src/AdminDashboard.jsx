@@ -415,7 +415,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
                     <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <input type="checkbox" id="isPublic" name="isPublic" checked={form.isPublic} onChange={handleChange}
                         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600" />
-                      <label htmlFor="isPublic" className="text-xs font-bold text-slate-700 cursor-pointer">👁️ Show on Store</label>
+                      <label htmlFor="isPublic" className="text-xs font-bold text-slate-700 cursor-pointer">👁️ Show on Website</label>
                     </div>
                   </div>
 
@@ -614,7 +614,7 @@ function ProductCard({ product, onEdit, onDelete, resolveImageUrl }) {
             <span className="inline-block rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-navy">{product.collectionSlug}</span>
           )}
           {product.isPublic === false && (
-            <span className="inline-block rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">👁️ Hidden from Store</span>
+            <span className="inline-block rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">👁️ Hidden from Website</span>
           )}
         </div>
       </div>
