@@ -42,7 +42,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'onefine_secret';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'onefine';
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI ? process.env.MONGODB_URI.trim() : undefined;
 
 // ── MongoDB Connection ────────────────────────────────────────────────────────
 if (!MONGODB_URI) {
