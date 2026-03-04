@@ -135,7 +135,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
     setTimeout(() => setToast(null), 3000);
   };
 
-  if (!auth.isAuthenticated) {
+  if (!embeddedMode && !auth.isAuthenticated) {
     return <LoginScreen onLogin={auth} />;
   }
 
@@ -174,17 +174,18 @@ export default function AdminDashboard({ embeddedMode = false }) {
         price: form.price,
         image: form.image.trim(),
         isBestSeller: form.isBestSeller,
+        isPublic: form.isPublic,
         collectionSlug: form.collectionSlug || '',
       };
       if (editingId) {
-        await updateProduct(editingId, payload, auth.token);
+        await updateProduct(editingId, payload, tokenToUse);
         showToast('Product updated!');
       } else {
-        await addProduct(payload, auth.token);
+        await addProduct(payload, tokenToUse);
         showToast('Product added!');
       }
       setEditingId(null);
-      setForm({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false });
+      setForm({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true });
     } catch (err) {
       showToast(err.message || 'Something went wrong', 'error');
     } finally {
@@ -195,7 +196,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Remove this product?')) return;
     try {
-      await deleteProduct(id, auth.token);
+      await deleteProduct(id, tokenToUse);
       showToast('Product removed');
     } catch (err) {
       showToast(err.message || 'Delete failed', 'error');
@@ -209,6 +210,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
       image: product.image,
       collectionSlug: product.collectionSlug || '',
       isBestSeller: product.isBestSeller || false,
+      isPublic: product.isPublic !== false,
     });
     setEditingId(product._id);
     setActiveTab('products');
@@ -244,7 +246,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
 
   // Quick-add brand: switch to Products tab with collection pre-selected
   const handleQuickAddBrand = (colSlug) => {
-    setForm({ name: '', price: '', image: '', collectionSlug: colSlug, isBestSeller: false });
+    setForm({ name: '', price: '', image: '', collectionSlug: colSlug, isBestSeller: false, isPublic: true });
     setEditingId(null);
     setActiveTab('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
