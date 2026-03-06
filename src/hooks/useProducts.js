@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { uploadToCloudinary } from '../lib/cloudinary';
 
 const EC2_BACKEND = 'http://13.60.254.1:4000';
-const API_BASE = import.meta.env.VITE_API_URL || EC2_BACKEND;
-// Bypass localtunnel's guard page for programmatic requests
 const baseHeaders = () => ({ 'bypass-tunnel-reminder': 'true' });
 
 const defaultProducts = [
@@ -41,13 +40,15 @@ export function useProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper for consistent API pathing
+  // Build full API URL — env override or EC2 fallback
   const api = useCallback((endpoint) => {
-    const base = (import.meta.env.VITE_API_URL || EC2_BACKEND).replace(/\/api\/?$/, '').replace(/\/$/, '');
+    const base = (import.meta.env.VITE_API_URL || EC2_BACKEND)
+      .replace(/\/api\/?$/, '')
+      .replace(/\/$/, '');
     return `${base}/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   }, []);
 
-  // Fetch all products from API
+  // Fetch all products
   const fetchProducts = useCallback(async (token) => {
     setLoading(true);
     setError(null);
@@ -55,124 +56,63 @@ export function useProducts() {
       const endpoint = token ? '/admin/products' : '/products';
       const headers = { ...baseHeaders() };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-
       const res = await fetch(api(endpoint), { headers });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setProducts(data.length > 0 ? data : defaultProducts);
     } catch {
-      // Fallback to defaults if server is unavailable
       setProducts(defaultProducts);
       setError('Using demo data — backend unavailable');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  // Add product (requires auth token)
+  // Add product
   const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller, isPublic, collectionSlug }, token) => {
     const res = await fetch(api('/products'), {
       method: 'POST',
-      headers: {
-        ...baseHeaders(),
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ name, price, rating, image, isBestSeller, isPublic, collectionSlug: collectionSlug || '' }),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to create product');
-    }
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to create product'); }
     const created = await res.json();
     setProducts((prev) => [created, ...prev]);
     return created;
-  }, []);
+  }, [api]);
 
-  // Update product (requires auth token)
+  // Update product
   const updateProduct = useCallback(async (id, updates, token) => {
     const res = await fetch(api(`/products/${id}`), {
       method: 'PUT',
-      headers: {
-        ...baseHeaders(),
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { ...baseHeaders(), 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        name: updates.name,
-        price: updates.price,
-        rating: updates.rating ?? 5,
-        image: updates.image,
-        isBestSeller: updates.isBestSeller,
-        isPublic: updates.isPublic,
-        collectionSlug: updates.collectionSlug || '',
+        name: updates.name, price: updates.price, rating: updates.rating ?? 5,
+        image: updates.image, isBestSeller: updates.isBestSeller,
+        isPublic: updates.isPublic, collectionSlug: updates.collectionSlug || '',
       }),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to update product');
-    }
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to update product'); }
     const updated = await res.json();
     setProducts((prev) => prev.map((p) => (p._id === id ? updated : p)));
     return updated;
-  }, []);
+  }, [api]);
 
-  // Delete product (requires auth token)
+  // Delete product
   const deleteProduct = useCallback(async (id, token) => {
     const res = await fetch(api(`/products/${id}`), {
       method: 'DELETE',
       headers: { ...baseHeaders(), Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to delete product');
-    }
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to delete product'); }
     setProducts((prev) => prev.filter((p) => p._id !== id));
-  }, []);
+  }, [api]);
 
-  // Upload image — direct to Cloudinary from browser (avoids HTTPS→HTTP mixed content block)
-  const uploadImage = useCallback(async (file) => {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  // ── Image Upload ──────────────────────────────────────────────────────────────
+  // Delegates to shared Cloudinary utility — direct browser upload, no backend needed
+  const uploadImage = useCallback((file) => uploadToCloudinary(file), []);
 
-    if (!cloudName || !uploadPreset) {
-      throw new Error('Cloudinary env vars not set (VITE_CLOUDINARY_CLOUD_NAME / VITE_CLOUDINARY_UPLOAD_PRESET)');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
-    formData.append('folder', 'onefine-products');
-
-    try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        { method: 'POST', body: formData }
-      );
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Cloudinary upload failed (${res.status})`);
-      }
-      const data = await res.json();
-      return data.secure_url;
-    } catch (err) {
-      console.error('Cloudinary direct upload error:', err);
-      throw err;
-    }
-  }, []);
-
-  return {
-    products,
-    loading,
-    error,
-    fetchProducts,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    uploadImage,
-  };
+  return { products, loading, error, fetchProducts, addProduct, updateProduct, deleteProduct, uploadImage };
 }

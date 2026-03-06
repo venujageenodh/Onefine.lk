@@ -13,11 +13,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const cloudinary = require('cloudinary').v2;
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -143,62 +141,8 @@ app.use(cors({
     /\.loca\.lt$/,
   ],
 }));
-app.use(express.json({ limit: '30mb' }));
-app.use(express.urlencoded({ limit: '30mb', extended: true }));
-
-// ── File Upload Setup ─────────────────────────────────────────────────────────
-const uploadDir = path.resolve(__dirname, '..', 'uploads');
-
-// Ensure directory exists with better logging
-try {
-  if (!fs.existsSync(uploadDir)) {
-    console.log('📦 Creating uploads directory at:', uploadDir);
-    fs.mkdirSync(uploadDir, { recursive: true });
-  } else {
-    console.log('✅ Uploads directory found at:', uploadDir);
-  }
-} catch (e) {
-  console.warn('⚠️ Could not create uploads directory (expected on serverless):', e.message);
-}
-
-// ── Cloudinary Configuration ───────────────────────────────────────────────
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Use memoryStorage — stream buffer directly to Cloudinary (no multer-storage-cloudinary needed)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 },
-});
-
-// Helper: stream a buffer to Cloudinary and resolve with the secure URL
-function streamToCloudinary(buffer, originalname) {
-  return new Promise((resolve, reject) => {
-    const safeName = (originalname || 'upload').split('.')[0].replace(/[^a-zA-Z0-9_-]/g, '_');
-    const publicId = `${Date.now()}-${safeName}`;
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: 'onefine-products', public_id: publicId, resource_type: 'image' },
-      (error, result) => {
-        if (error) {
-          console.error('❌ Cloudinary stream error:', JSON.stringify(error));
-          return reject(new Error(error.message || 'Cloudinary upload failed'));
-        }
-        resolve(result.secure_url);
-      }
-    );
-    stream.end(buffer);
-  });
-}
-
-app.use('/uploads', express.static(uploadDir));
-
-// Also serve /tmp/uploads if on Vercel
-if (process.env.VERCEL) {
-  app.use('/uploads', express.static('/tmp/uploads'));
-}
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // ── Auth Middleware ───────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
@@ -272,30 +216,8 @@ app.post('/api/auth/login', (req, res) => {
   return res.json({ token });
 });
 
-// ── Upload Route ──────────────────────────────────────────────────────────────
-// POST /api/upload (protected) — streams file buffer directly to Cloudinary
-app.post('/api/upload', requireAuth, (req, res) => {
-  upload.single('file')(req, res, async (err) => {
-    if (err) {
-      console.error('❌ Multer error:', err);
-      return res.status(400).json({ error: err.message || 'File upload error' });
-    }
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-    try {
-      console.log('☁️  Streaming to Cloudinary:', req.file.originalname, req.file.size, 'bytes');
-      const url = await streamToCloudinary(req.file.buffer, req.file.originalname);
-      console.log('✅ Cloudinary upload success:', url);
-      res.json({ url });
-    } catch (cloudErr) {
-      console.error('❌ Cloudinary error:', cloudErr.message || cloudErr);
-      res.status(500).json({ error: cloudErr.message || 'Cloudinary upload failed' });
-    }
-  });
-});
 
-// ── Product Routes ────────────────────────────────────────────────────────────
+// ── Product Routes ────────────────────────────────────────────────────────────────────────────
 // GET /api/products  (public storefront)
 app.get('/api/products', async (_req, res) => {
   try {

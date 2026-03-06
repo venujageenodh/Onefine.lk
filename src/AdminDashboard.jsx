@@ -332,7 +332,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
           </div>
           <div className="flex items-center gap-3">
             <a
-              href="/biz-admin/orders"
+              href="/admin/orders"
               className="rounded-full border border-gold/50 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-navy hover:bg-gold/20 transition-colors"
             >
               Orders
