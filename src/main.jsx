@@ -28,7 +28,7 @@ let useAdminAuth = false;
 if (path.startsWith('/biz-admin')) {
   RootComponent = AdminApp;
   useAdminAuth = true;
-} else if (path.includes('/admin/orders')) {
+} else if (path.includes('/biz-admin/orders')) {
   RootComponent = AdminOrdersPage;
 } else if (path.includes('/admin')) {
   RootComponent = AdminDashboard;
