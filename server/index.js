@@ -178,11 +178,14 @@ const upload = multer({
 function streamToCloudinary(buffer, originalname) {
   return new Promise((resolve, reject) => {
     const safeName = (originalname || 'upload').split('.')[0].replace(/[^a-zA-Z0-9_-]/g, '_');
-    const publicId = `onefine-products/${Date.now()}-${safeName}`;
+    const publicId = `${Date.now()}-${safeName}`;
     const stream = cloudinary.uploader.upload_stream(
       { folder: 'onefine-products', public_id: publicId, resource_type: 'image' },
       (error, result) => {
-        if (error) return reject(error);
+        if (error) {
+          console.error('❌ Cloudinary stream error:', JSON.stringify(error));
+          return reject(new Error(error.message || 'Cloudinary upload failed'));
+        }
         resolve(result.secure_url);
       }
     );
