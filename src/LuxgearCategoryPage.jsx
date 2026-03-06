@@ -138,29 +138,6 @@ export default function LuxgearCategoryPage() {
               />
             </div>
           </div>
-
-          <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-2xl mx-auto px-4 sm:px-0">
-            {['Toyota', 'Suzuki', 'Audi', 'BMW', 'Mercedes', 'Nissan'].map(brand => (
-              <button
-                key={brand}
-                onClick={() => setSearchQuery(brand)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${searchQuery.toLowerCase() === brand.toLowerCase()
-                    ? 'bg-navy text-white border-navy'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-navy hover:text-navy cursor-pointer'
-                  }`}
-              >
-                {brand}
-              </button>
-            ))}
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="px-4 py-1.5 rounded-full text-xs font-medium transition-colors border bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
-          </div>
         </section>
 
         {/* Product grid */}
