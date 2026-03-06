@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const EC2_BACKEND = 'http://13.60.254.1:4000';
+const API_BASE = import.meta.env.VITE_API_URL || EC2_BACKEND;
 const baseHeaders = () => ({ 'bypass-tunnel-reminder': 'true' });
 const TOKEN_KEY = 'onefine_admin_token';
 
@@ -12,7 +13,7 @@ export function useAuth() {
     const isAuthenticated = Boolean(token);
 
     const api = (path) => {
-        const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+        const base = (import.meta.env.VITE_API_URL || EC2_BACKEND).replace(/\/api\/?$/, '').replace(/\/$/, '');
         return `${base}/api${path.startsWith('/') ? path : `/${path}`}`;
     };
 

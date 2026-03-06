@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const EC2_BACKEND = 'http://13.60.254.1:4000';
+const API_BASE = import.meta.env.VITE_API_URL || EC2_BACKEND;
 // Bypass localtunnel's guard page for programmatic requests
 const baseHeaders = () => ({ 'bypass-tunnel-reminder': 'true' });
 
@@ -42,7 +43,7 @@ export function useProducts() {
 
   // Helper for consistent API pathing
   const api = useCallback((endpoint) => {
-    const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
+    const base = (import.meta.env.VITE_API_URL || EC2_BACKEND).replace(/\/api\/?$/, '').replace(/\/$/, '');
     return `${base}/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   }, []);
 
