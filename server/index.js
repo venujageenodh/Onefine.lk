@@ -18,7 +18,6 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -169,22 +168,27 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'onefine-products',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-    public_id: (_req, file) => {
-      const safe = file.originalname.split('.')[0].replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      return `${Date.now()}-${safe}`;
-    },
-  },
+// Use memoryStorage — stream buffer directly to Cloudinary (no multer-storage-cloudinary needed)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-const upload = multer({
-  storage,
-  limits: { fileSize: 25 * 1024 * 1024 } // Increased to 25MB
-});
+// Helper: stream a buffer to Cloudinary and resolve with the secure URL
+function streamToCloudinary(buffer, originalname) {
+  return new Promise((resolve, reject) => {
+    const safeName = (originalname || 'upload').split('.')[0].replace(/[^a-zA-Z0-9_-]/g, '_');
+    const publicId = `onefine-products/${Date.now()}-${safeName}`;
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'onefine-products', public_id: publicId, resource_type: 'image' },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    stream.end(buffer);
+  });
+}
 
 app.use('/uploads', express.static(uploadDir));
 
@@ -266,17 +270,26 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // ── Upload Route ──────────────────────────────────────────────────────────────
-// POST /api/upload (protected)
-app.post('/api/upload', requireAuth, upload.single('file'), (req, res) => {
-  try {
+// POST /api/upload (protected) — streams file buffer directly to Cloudinary
+app.post('/api/upload', requireAuth, (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      console.error('❌ Multer error:', err);
+      return res.status(400).json({ error: err.message || 'File upload error' });
+    }
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    res.json({ url: req.file.path });
-  } catch (err) {
-    console.error('❌ Error handling upload:', err);
-    res.status(500).json({ error: err.message });
-  }
+    try {
+      console.log('☁️  Streaming to Cloudinary:', req.file.originalname, req.file.size, 'bytes');
+      const url = await streamToCloudinary(req.file.buffer, req.file.originalname);
+      console.log('✅ Cloudinary upload success:', url);
+      res.json({ url });
+    } catch (cloudErr) {
+      console.error('❌ Cloudinary error:', cloudErr.message || cloudErr);
+      res.status(500).json({ error: cloudErr.message || 'Cloudinary upload failed' });
+    }
+  });
 });
 
 // ── Product Routes ────────────────────────────────────────────────────────────
@@ -414,27 +427,7 @@ app.delete('/api/collections/:id', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/upload  (protected)
-app.post('/api/upload', requireAuth, (req, res) => {
-  console.log('🚀 Upload request received');
-  upload.single('image')(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      console.error('❌ Multer error:', err.code, err.message);
-      return res.status(400).json({ error: `Multer Error: ${err.message}` });
-    } else if (err) {
-      console.error('❌ Upload error:', err);
-      return res.status(500).json({ error: `Server Error: ${err.message}` });
-    }
 
-    if (!req.file) {
-      console.error('❌ No file in request');
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    console.log('✅ File uploaded to Cloudinary Successfully:', req.file.path);
-    res.json({ url: req.file.path });
-  });
-});
 
 // ── Order Routes ──────────────────────────────────────────────────────────────
 
