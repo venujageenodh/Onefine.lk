@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { HiOutlineSearch, HiOutlineShoppingBag, HiMenu, HiX } from 'react-icons/hi';
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useCart } from './hooks/useCart';
@@ -21,10 +21,16 @@ export default function LuxgearCategoryPage() {
   const { products } = useProducts();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [checkoutProduct, setCheckoutProduct] = React.useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const luxgearProducts = useMemo(() => {
-    return products.filter((p) => (p.name || '').toLowerCase().includes('luxgear'));
-  }, [products]);
+    let filtered = products.filter((p) => (p.name || '').toLowerCase().includes('luxgear'));
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q));
+    }
+    return filtered;
+  }, [products, searchQuery]);
 
   const handleAddToCart = (product) => {
     addToCart({ id: product._id, name: product.name, price: product.price, image: product.image });
@@ -118,13 +124,54 @@ export default function LuxgearCategoryPage() {
             <span>✦ Soft-touch finish</span>
             <span>✦ Precision branding</span>
           </div>
+
+          {/* Search Bar & Quick Filters */}
+          <div className="mt-8 max-w-md mx-auto px-4 sm:px-0">
+            <div className="relative flex items-center w-full">
+              <HiOutlineSearch className="absolute left-4 text-slate-400 text-lg pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search brand (e.g. Toyota, Audi...)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-full border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-2xl mx-auto px-4 sm:px-0">
+            {['Toyota', 'Suzuki', 'Audi', 'BMW', 'Mercedes', 'Nissan'].map(brand => (
+              <button
+                key={brand}
+                onClick={() => setSearchQuery(brand)}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${searchQuery.toLowerCase() === brand.toLowerCase()
+                    ? 'bg-navy text-white border-navy'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-navy hover:text-navy cursor-pointer'
+                  }`}
+              >
+                {brand}
+              </button>
+            ))}
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-4 py-1.5 rounded-full text-xs font-medium transition-colors border bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </section>
 
         {/* Product grid */}
         <section>
           {luxgearProducts.length === 0 ? (
             <div className="py-12 text-center text-slate-500">
-              <p>No LUXGEAR bottles available. Admin can add them via Dashboard.</p>
+              {searchQuery.trim() ? (
+                <p>No bottles found for this brand.</p>
+              ) : (
+                <p>No LUXGEAR bottles available. Admin can add them via Dashboard.</p>
+              )}
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
