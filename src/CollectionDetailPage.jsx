@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { HiOutlineShoppingBag, HiMenu, HiX } from 'react-icons/hi';
+import React, { useState, useEffect, useMemo } from 'react';
+import { HiOutlineSearch, HiOutlineShoppingBag, HiMenu, HiX } from 'react-icons/hi';
 import { FaWhatsapp, FaFacebookF, FaInstagram, FaLinkedinIn } from 'react-icons/fa';
 import { useCart } from './hooks/useCart';
 import CartDrawer from './components/CartDrawer';
@@ -25,6 +25,13 @@ export default function CollectionDetailPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredProducts = useMemo(() => {
+        if (!searchQuery.trim()) return products;
+        const q = searchQuery.toLowerCase().trim();
+        return products.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q));
+    }, [products, searchQuery]);
 
     // Read slug from URL
     const slug = new URLSearchParams(window.location.search).get('slug') || '';
@@ -162,18 +169,65 @@ export default function CollectionDetailPage() {
                                 <span>✦ Custom branding</span>
                                 <span>✦ Island-wide delivery</span>
                             </div>
+
+                            {/* Search and Filters for luxgear variants */}
+                            {slug && slug.includes('luxgear') && (
+                                <>
+                                    <div className="mt-8 max-w-md mx-auto px-4 sm:px-0">
+                                        <div className="relative flex items-center w-full">
+                                            <HiOutlineSearch className="absolute left-4 text-slate-400 text-lg pointer-events-none" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search brand (e.g. Toyota, Audi...)"
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full pl-11 pr-4 py-3 rounded-full border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:border-transparent transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-2xl mx-auto px-4 sm:px-0">
+                                        {['Toyota', 'Suzuki', 'Audi', 'BMW', 'Mercedes', 'Nissan'].map(brand => (
+                                            <button
+                                                key={brand}
+                                                onClick={() => setSearchQuery(brand)}
+                                                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors border ${searchQuery.toLowerCase() === brand.toLowerCase()
+                                                        ? 'bg-navy text-white border-navy'
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:border-navy hover:text-navy cursor-pointer'
+                                                    }`}
+                                            >
+                                                {brand}
+                                            </button>
+                                        ))}
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="px-4 py-1.5 rounded-full text-xs font-medium transition-colors border bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 cursor-pointer"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </section>
 
                         {/* Product grid */}
-                        {products.length === 0 ? (
+                        {filteredProducts.length === 0 ? (
                             <div className="py-16 text-center text-slate-500 space-y-3">
-                                <p className="text-2xl">🏷️</p>
-                                <p className="font-medium text-navy">No products in this collection yet</p>
-                                <p className="text-sm">Admin can add products and assign them to <strong>{collection?.name}</strong> from the dashboard.</p>
+                                {searchQuery.trim() ? (
+                                    <p className="font-medium text-navy text-lg py-8">No bottles found for this brand.</p>
+                                ) : (
+                                    <>
+                                        <p className="text-2xl">🏷️</p>
+                                        <p className="font-medium text-navy">No products in this collection yet</p>
+                                        <p className="text-sm">Admin can add products and assign them to <strong>{collection?.name}</strong> from the dashboard.</p>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                {products.map((product) => (
+                                {filteredProducts.map((product) => (
                                     <article
                                         key={product._id}
                                         className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-soft"
