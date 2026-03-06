@@ -1,7 +1,6 @@
 // Central API utility for the new admin system
-const EC2_BACKEND = 'http://13.60.254.1:4000';
 const BASE = (() => {
-    const raw = import.meta.env.VITE_API_URL || EC2_BACKEND;
+    const raw = import.meta.env.VITE_API_URL || '';
     return raw.replace(/\/api\/?$/, '').replace(/\/$/, '');
 })();
 

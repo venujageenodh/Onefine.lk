@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { uploadToCloudinary } from '../lib/cloudinary';
 
-const EC2_BACKEND = 'http://13.60.254.1:4000';
+// Use relative paths in production (routes through Vercel HTTPS backend).
+// In local dev, VITE_API_URL points to localhost:4000.
+const getBase = () => {
+  const raw = import.meta.env.VITE_API_URL || '';
+  return raw.replace(/\/api\/?$/, '').replace(/\/$/, '');
+};
+
 const baseHeaders = () => ({ 'bypass-tunnel-reminder': 'true' });
 
 const defaultProducts = [
@@ -40,15 +46,11 @@ export function useProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Build full API URL — env override or EC2 fallback
   const api = useCallback((endpoint) => {
-    const base = (import.meta.env.VITE_API_URL || EC2_BACKEND)
-      .replace(/\/api\/?$/, '')
-      .replace(/\/$/, '');
+    const base = getBase();
     return `${base}/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   }, []);
 
-  // Fetch all products
   const fetchProducts = useCallback(async (token) => {
     setLoading(true);
     setError(null);
@@ -70,7 +72,6 @@ export function useProducts() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  // Add product
   const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller, isPublic, collectionSlug }, token) => {
     const res = await fetch(api('/products'), {
       method: 'POST',
@@ -83,7 +84,6 @@ export function useProducts() {
     return created;
   }, [api]);
 
-  // Update product
   const updateProduct = useCallback(async (id, updates, token) => {
     const res = await fetch(api(`/products/${id}`), {
       method: 'PUT',
@@ -100,7 +100,6 @@ export function useProducts() {
     return updated;
   }, [api]);
 
-  // Delete product
   const deleteProduct = useCallback(async (id, token) => {
     const res = await fetch(api(`/products/${id}`), {
       method: 'DELETE',
@@ -110,8 +109,7 @@ export function useProducts() {
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }, [api]);
 
-  // ── Image Upload ──────────────────────────────────────────────────────────────
-  // Delegates to shared Cloudinary utility — direct browser upload, no backend needed
+  // Direct browser → Cloudinary upload (HTTPS, no backend needed)
   const uploadImage = useCallback((file) => uploadToCloudinary(file), []);
 
   return { products, loading, error, fetchProducts, addProduct, updateProduct, deleteProduct, uploadImage };

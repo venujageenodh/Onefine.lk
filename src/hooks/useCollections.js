@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const EC2_BACKEND = 'http://13.60.254.1:4000';
 function apiUrl(path) {
-    const base = (import.meta.env.VITE_API_URL || EC2_BACKEND).replace(/\/api\/?$/, '').replace(/\/$/, '');
+    const base = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '');
     return `${base}/api${path.startsWith('/') ? path : `/${path}`}`;
 }
 
