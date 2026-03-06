@@ -133,37 +133,38 @@ export function useProducts() {
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }, []);
 
-  // Upload image (direct to Cloudinary to bypass server limits)
-  const uploadImage = useCallback(async (file) => {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME?.trim();
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET?.trim();
-
-    if (!cloudName || !uploadPreset) {
-      throw new Error('Cloudinary config missing in .env');
+  // Upload image (via the backend server to not bypass it)
+  const uploadImage = useCallback(async (file, token) => {
+    if (!token) {
+      throw new Error('Authentication token required to upload images');
     }
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
 
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const endpoint = '/upload';
+      const headers = { ...baseHeaders() };
+      headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(api(endpoint), {
         method: 'POST',
+        headers, // Browser automatically sets the correct Content-Type for FormData
         body: formData,
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error?.message || 'Cloudinary upload failed');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Server upload failed');
       }
 
       const data = await res.json();
-      return data.secure_url;
+      return data.url;
     } catch (err) {
-      console.error('Cloudinary Direct Upload Error:', err);
+      console.error('Server Upload Error:', err);
       throw err;
     }
-  }, []);
+  }, [api]);
 
   return {
     products,

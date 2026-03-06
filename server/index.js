@@ -265,6 +265,20 @@ app.post('/api/auth/login', (req, res) => {
   return res.json({ token });
 });
 
+// ── Upload Route ──────────────────────────────────────────────────────────────
+// POST /api/upload (protected)
+app.post('/api/upload', requireAuth, upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    res.json({ url: req.file.path });
+  } catch (err) {
+    console.error('❌ Error handling upload:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Product Routes ────────────────────────────────────────────────────────────
 // GET /api/products  (public storefront)
 app.get('/api/products', async (_req, res) => {

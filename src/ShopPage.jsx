@@ -7,6 +7,7 @@ import { useCollections } from './hooks/useCollections';
 import CartDrawer from './components/CartDrawer';
 import CheckoutModal from './components/CheckoutModal';
 import PaymentIcons from './components/PaymentIcons';
+import Footer from './components/Footer';
 import logo from './assets/onefine-logo.png';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -272,65 +273,7 @@ export default function ShopPage() {
         </main>
       </div>
 
-      <footer className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-12 border-t border-slate-100 pt-8 pb-10">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div className="space-y-3 md:col-span-2">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="OneFine logo" className="h-12 w-auto object-contain" />
-              <div className="leading-tight">
-                <div className="font-display text-xl tracking-[0.18em] text-navy">ONEFINE</div>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Corporate Gifting Sri Lanka</p>
-              </div>
-            </div>
-            <p className="max-w-sm text-xs text-slate-500">
-              Premium corporate gifting and branded merchandise, designed and delivered with precision for Sri Lankan businesses and global teams based in Sri Lanka.
-            </p>
-            <div className="flex items-center gap-3">
-              <a href="https://www.facebook.com/share/14UfX7GiR5r/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-gold hover:text-gold transition-colors">
-                <FaFacebookF className="text-[13px]" />
-              </a>
-              <a href="https://www.instagram.com/_.one_.fine_?igsh=ZHZocWd5c3Jxd24w" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-gold hover:text-gold transition-colors">
-                <FaInstagram className="text-[13px]" />
-              </a>
-              <a href="https://www.linkedin.com/company/onefine-lk" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-gold hover:text-gold transition-colors">
-                <FaLinkedinIn className="text-[13px]" />
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick Links</h4>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li><a href="/" className="hover:text-navy">Home</a></li>
-              <li><span className="text-navy font-semibold">Shop</span></li>
-              <li><a href="/luxgear-bottles" className="hover:text-navy">LUXGEAR Bottles</a></li>
-              <li><a href="/about" className="hover:text-navy">About Us</a></li>
-              <li><a href="/contact-us" className="hover:text-navy">Contact</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Contact</h4>
-            <div className="mt-3 space-y-1 text-sm text-slate-600">
-              <p>20/9, Green Terrace, Parakandeniya, Imbulgoda</p>
-              <p>+94 76 812 1701</p>
-              <p>onefine.info@gmail.com</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-12 flex justify-center">
-          <PaymentIcons />
-        </div>
-
-        <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-400 sm:flex-row sm:items-center">
-          <p>© {new Date().getFullYear()} OneFine. All rights reserved.</p>
-          <div className="flex gap-4">
-            <a href="/privacy" className="hover:text-navy">Privacy Policy</a>
-            <a href="/terms" className="hover:text-navy">Terms of Service</a>
-          </div>
-        </div>
-      </footer>
+      <Footer className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mt-12 border-t border-slate-100 pt-8 pb-10" />
 
       <a
         href="https://wa.me/94768121701"

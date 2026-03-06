@@ -105,7 +105,7 @@ function LoginScreen({ onLogin }) {
 // ── Admin Dashboard ───────────────────────────────────────────────────────────
 export default function AdminDashboard({ embeddedMode = false }) {
   const auth = useAuth();
-  const tokenToUse = auth?.token || sessionStorage.getItem('adminToken');
+  const tokenToUse = auth?.token || sessionStorage.getItem('onefine_admin_token') || sessionStorage.getItem('onefine_biz_token');
   const { products, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, uploadImage } =
     useProducts(tokenToUse);
   const { collections, loading: colLoading } = useCollections();
@@ -154,7 +154,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
     if (!file) return;
     setIsUploading(true);
     try {
-      const url = await uploadImage(file);
+      const url = await uploadImage(file, tokenToUse);
       setForm((prev) => ({ ...prev, image: url }));
     } catch {
       showToast('Image upload failed', 'error');
@@ -235,7 +235,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
     if (!file) return;
     setColImageUploading(true);
     try {
-      const url = await uploadImage(file);
+      const url = await uploadImage(file, tokenToUse);
       setColForm((prev) => ({ ...prev, coverImage: url }));
     } catch {
       showToast('Cover image upload failed', 'error');
@@ -263,7 +263,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
         : apiUrl('/collections');
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenToUse}` },
         body: JSON.stringify(colForm),
       });
       const data = await res.json();
@@ -295,7 +295,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
     try {
       const res = await fetch(apiUrl(`/collections/${id}`), {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${auth.token}` },
+        headers: { Authorization: `Bearer ${tokenToUse}` },
       });
       if (!res.ok) throw new Error('Delete failed');
       setLocalCollections((prev) => prev.filter((c) => c._id !== id));
