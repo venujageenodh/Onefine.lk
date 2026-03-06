@@ -134,38 +134,36 @@ export function useProducts() {
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }, []);
 
-  // Upload image (via the backend server to not bypass it)
-  const uploadImage = useCallback(async (file, token) => {
-    if (!token) {
-      throw new Error('Authentication token required to upload images');
+  // Upload image — direct to Cloudinary from browser (avoids HTTPS→HTTP mixed content block)
+  const uploadImage = useCallback(async (file) => {
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary env vars not set (VITE_CLOUDINARY_CLOUD_NAME / VITE_CLOUDINARY_UPLOAD_PRESET)');
     }
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('folder', 'onefine-products');
 
     try {
-      const endpoint = '/upload';
-      const headers = { ...baseHeaders() };
-      headers['Authorization'] = `Bearer ${token}`;
-
-      const res = await fetch(api(endpoint), {
-        method: 'POST',
-        headers, // Browser automatically sets the correct Content-Type for FormData
-        body: formData,
-      });
-
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        { method: 'POST', body: formData }
+      );
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Server upload failed');
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Cloudinary upload failed (${res.status})`);
       }
-
       const data = await res.json();
-      return data.url;
+      return data.secure_url;
     } catch (err) {
-      console.error('Server Upload Error:', err);
+      console.error('Cloudinary direct upload error:', err);
       throw err;
     }
-  }, [api]);
+  }, []);
 
   return {
     products,
