@@ -40,7 +40,7 @@ export default function AdminApp() {
     if (!isAuthenticated) return <AdminLogin />;
 
     const allowedNav = NAV.filter(n =>
-        n.perm === '__owner__' ? admin?.role === 'OWNER' : hasPermission(n.perm) || hasPermission('*')
+        n.perm === '__owner__' ? (admin?.role === 'OWNER' || admin?.role === 'DEVELOPER') : hasPermission(n.perm) || hasPermission('*')
     );
     const ActivePage = PAGES[page] || DashboardPage;
 

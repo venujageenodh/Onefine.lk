@@ -6,7 +6,7 @@ const adminUserSchema = new mongoose.Schema({
     passwordHash: { type: String, required: true },
     role: {
         type: String,
-        enum: ['OWNER', 'SALES_ADMIN', 'INVENTORY_ADMIN', 'ACCOUNT_ADMIN'],
+        enum: ['OWNER', 'DEVELOPER', 'SALES_ADMIN', 'INVENTORY_ADMIN', 'ACCOUNT_ADMIN'],
         default: 'SALES_ADMIN',
     },
     permissions: [{ type: String }], // e.g. ['orders.view','orders.edit','inventory.view']
