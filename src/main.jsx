@@ -1,8 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import AdminDashboard from './AdminDashboard.jsx';
-import AdminOrdersPage from './AdminOrdersPage.jsx';
 import ShopPage from './ShopPage.jsx';
 import LuxgearCategoryPage from './LuxgearCategoryPage.jsx';
 import CollectionDetailPage from './CollectionDetailPage.jsx';
@@ -28,10 +26,6 @@ let useAdminAuth = false;
 if (path.startsWith('/biz-admin')) {
   RootComponent = AdminApp;
   useAdminAuth = true;
-} else if (path.includes('/admin/orders')) {
-  RootComponent = AdminOrdersPage;
-} else if (path.includes('/admin')) {
-  RootComponent = AdminDashboard;
 } else if (path.includes('/collection')) {
   RootComponent = CollectionDetailPage;
 } else if (path.includes('/luxgear-bottles')) {

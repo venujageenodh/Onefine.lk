@@ -1,19 +1,36 @@
-import React from 'react';
+﻿import React, { useState } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
-import { HiX, HiCreditCard, HiCash, HiBanknotes } from 'react-icons/hi';
+import { HiX, HiCreditCard, HiCash } from 'react-icons/hi';
 
 export default function CheckoutModal({ product, onClose }) {
+    const [view, setView] = useState('options');
+    const [formData, setFormData] = useState({ name: '', address: '', phone: '' });
+
     if (!product) return null;
 
-    const handleWhatsApp = () => {
-        const msg =
-            `🛍️ *OneFine Order Request*\n\n` +
-            `• *Product:* ${product.name}\n` +
-            `• *Price:* ${product.price}\n` +
-            `• *Qty:* 1\n\n` +
-            `Please send me your checkout details. I'd like to confirm this order.\n\n` +
-            `(Reply with your: Name / Address / Phone)`;
-        window.open(`https://wa.me/94768121701?text=${encodeURIComponent(msg)}`, '_blank');
+    const handleWhatsAppClick = () => {
+        setView('whatsapp_form');
+    };
+
+    const submitWhatsAppOrder = (e) => {
+        e.preventDefault();
+        const productUrl = product._id ? `${window.location.origin}/product/${product._id}` : window.location.origin;
+        
+        const msg = `🛍️ *NEW ORDER REQUEST - ONEFINE* 🛍️\n\n` +
+            `Hello! I'm interested in purchasing this item:\n\n` +
+            `📦 *Product:* ${product.name}\n` +
+            `💰 *Price:* ${product.price}\n` +
+            `🔢 *Quantity:* 1\n` +
+            (product._id ? `🔗 *Link:* ${productUrl}\n` : '') +
+            `\n` +
+            `*📍 My Delivery Details:*\n` +
+            `👤 Name: ${formData.name}\n` +
+            `🏠 Address: ${formData.address}\n` +
+            `📱 Phone: ${formData.phone}\n` +
+            `\n` +
+            `_Please let me know the next steps to confirm my order!_ ✨`;
+
+        window.open(`https://api.whatsapp.com/send?phone=94768121701&text=${encodeURIComponent(msg)}`, '_blank');
         onClose();
     };
 
@@ -46,10 +63,21 @@ export default function CheckoutModal({ product, onClose }) {
                 {/* Header */}
                 <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-slate-100">
                     <div>
-                        <h2 className="font-display text-xl text-navy">Choose Checkout Method</h2>
-                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
-                            {product.name} — {product.price}
-                        </p>
+                        {view === 'options' ? (
+                            <>
+                                <h2 className="font-display text-xl text-navy">Choose Checkout Method</h2>
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                                    {product.name} â€” {product.price}
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="font-display text-xl text-navy">Delivery Details</h2>
+                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                                    Enter details to order via WhatsApp
+                                </p>
+                            </>
+                        )}
                     </div>
                     <button
                         onClick={onClose}
@@ -60,8 +88,9 @@ export default function CheckoutModal({ product, onClose }) {
                     </button>
                 </div>
 
-                {/* Options */}
-                <div className="p-7 space-y-3">
+                {/* Options and Form */}
+                {view === 'options' ? (
+                    <div className="p-7 space-y-3">
                     {/* 1) Pay Online (PayHere) */}
                     <button
                         id="checkout-payhere-btn"
@@ -73,15 +102,15 @@ export default function CheckoutModal({ product, onClose }) {
                         </div>
                         <div>
                             <p className="font-bold text-navy text-sm">Pay Online (PayHere)</p>
-                            <p className="text-[11px] text-navy/70 mt-0.5">Cards, bank & mobile — secure payment</p>
+                            <p className="text-[11px] text-navy/70 mt-0.5">Cards, bank & mobile â€” secure payment</p>
                         </div>
-                        <span className="ml-auto text-navy/40 text-lg">→</span>
+                        <span className="ml-auto text-navy/40 text-lg">â†’</span>
                     </button>
 
                     {/* 2) WhatsApp Order */}
                     <button
                         id="checkout-whatsapp-btn"
-                        onClick={handleWhatsApp}
+                        onClick={handleWhatsAppClick}
                         className="w-full flex items-center gap-4 rounded-2xl border-2 border-[#25D366] px-5 py-4 text-left transition-all hover:bg-[#25D366]/5 hover:-translate-y-0.5 group"
                     >
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#25D366]/10 text-[#25D366] group-hover:bg-[#25D366]/20 transition-colors">
@@ -91,7 +120,7 @@ export default function CheckoutModal({ product, onClose }) {
                             <p className="font-bold text-navy text-sm">WhatsApp Order</p>
                             <p className="text-[11px] text-slate-500 mt-0.5">Chat with us directly to confirm</p>
                         </div>
-                        <span className="ml-auto text-slate-300 text-lg">→</span>
+                        <span className="ml-auto text-slate-300 text-lg">â†’</span>
                     </button>
 
                     {/* 3) Bank Transfer */}
@@ -107,9 +136,9 @@ export default function CheckoutModal({ product, onClose }) {
                         </div>
                         <div>
                             <p className="font-bold text-navy text-sm">Bank Transfer</p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Direct bank deposit — we confirm manually</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5">Direct bank deposit â€” we confirm manually</p>
                         </div>
-                        <span className="ml-auto text-slate-300 text-lg">→</span>
+                        <span className="ml-auto text-slate-300 text-lg">â†’</span>
                     </button>
 
                     {/* 4) Cash on Delivery */}
@@ -125,13 +154,68 @@ export default function CheckoutModal({ product, onClose }) {
                             <p className="font-bold text-navy text-sm">Cash on Delivery</p>
                             <p className="text-[11px] text-slate-500 mt-0.5">Pay when your order arrives</p>
                         </div>
-                        <span className="ml-auto text-slate-300 text-lg">→</span>
+                        <span className="ml-auto text-slate-300 text-lg">â†’</span>
                     </button>
-                </div>
+                    </div>
+                ) : (
+                    <form onSubmit={submitWhatsAppOrder} className="p-7 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div>
+                            <label className="block text-sm font-medium text-navy mb-1" htmlFor="wa-name">Name</label>
+                            <input 
+                                id="wa-name"
+                                type="text" 
+                                required 
+                                value={formData.name} 
+                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy"
+                                placeholder="Your full name"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-navy mb-1" htmlFor="wa-address">Address</label>
+                            <textarea 
+                                id="wa-address"
+                                required 
+                                value={formData.address} 
+                                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy resize-none"
+                                placeholder="Your delivery address"
+                                rows="2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-navy mb-1" htmlFor="wa-phone">Phone number</label>
+                            <input 
+                                id="wa-phone"
+                                type="tel" 
+                                required 
+                                value={formData.phone} 
+                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy"
+                                placeholder="Your phone number"
+                            />
+                        </div>
+                        <div className="pt-2 flex gap-3">
+                            <button 
+                                type="button" 
+                                onClick={() => setView('options')}
+                                className="flex-1 rounded-xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200"
+                            >
+                                Back
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="flex-1 flex justify-center items-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:-translate-y-0.5 hover:bg-[#20bd5a]"
+                            >
+                                <FaWhatsapp className="text-lg" /> Send
+                            </button>
+                        </div>
+                    </form>
+                )}
 
                 {/* Footer note */}
                 <p className="pb-5 text-center text-[10px] text-slate-400">
-                    🔒 All transactions are secure and encrypted
+                    ðŸ”’ All transactions are secure and encrypted
                 </p>
             </div>
         </div>

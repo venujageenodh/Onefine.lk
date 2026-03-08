@@ -320,37 +320,39 @@ export default function AdminDashboard({ embeddedMode = false }) {
       )}
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="OneFine logo" className="h-10 w-auto object-contain" />
-            <div className="leading-tight">
-              <h1 className="font-display text-xl tracking-[0.18em] text-navy">ONEFINE ADMIN</h1>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">
-                Managed by Team OneFine
-              </p>
+        {!embeddedMode && (
+          <header className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="OneFine logo" className="h-10 w-auto object-contain" />
+              <div className="leading-tight">
+                <h1 className="font-display text-xl tracking-[0.18em] text-navy">ONEFINE ADMIN</h1>
+                <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">
+                  Managed by Team OneFine
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="/admin/orders"
-              className="rounded-full border border-gold/50 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-navy hover:bg-gold/20 transition-colors"
-            >
-              Orders
-            </a>
-            <a
-              href="/"
-              className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:border-navy hover:text-navy transition-colors"
-            >
-              View Storefront
-            </a>
-            <button
-              onClick={auth.logout}
-              className="rounded-full border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </header>
+            <div className="flex items-center gap-3">
+              <a
+                href="/biz-admin/orders"
+                className="rounded-full border border-gold/50 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-navy hover:bg-gold/20 transition-colors"
+              >
+                Orders
+              </a>
+              <a
+                href="/"
+                className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:border-navy hover:text-navy transition-colors"
+              >
+                View Storefront
+              </a>
+              <button
+                onClick={auth.logout}
+                className="rounded-full border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </header>
+        )}
 
         {/* Tab buttons */}
         <div className="flex gap-2 mb-6">
