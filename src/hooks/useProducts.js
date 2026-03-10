@@ -61,7 +61,16 @@ export function useProducts() {
       const res = await fetch(api(endpoint), { headers });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setProducts(data.length > 0 ? data : defaultProducts);
+      const prods = data.length > 0 ? data : defaultProducts;
+      // Apply localStorage sort order (works even if remote server lacks sortOrder)
+      try {
+        const saved = localStorage.getItem('onefine_product_order');
+        if (saved) {
+          const orderMap = JSON.parse(saved);
+          prods.sort((a, b) => (orderMap[a._id] ?? 9999) - (orderMap[b._id] ?? 9999));
+        }
+      } catch (_) {}
+      setProducts(prods);
     } catch {
       setProducts(defaultProducts);
       setError('Using demo data — backend unavailable');
@@ -109,8 +118,41 @@ export function useProducts() {
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }, [api]);
 
+  const updateProductOrder = useCallback(async (orderedProducts, token) => {
+    // 1. Persist order locally right away — works even without remote server changes
+    const orderMap = {};
+    orderedProducts.forEach((p, i) => { orderMap[p._id] = i; });
+    localStorage.setItem('onefine_product_order', JSON.stringify(orderMap));
+
+    // 2. Try to persist on the server (silent — won't throw if remote lacks sortOrder support)
+    try {
+      await Promise.all(
+        orderedProducts.map((product, index) =>
+          fetch(api(`/products/${product._id}`), {
+            method: 'PUT',
+            headers: { ...baseHeaders(), 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              name: product.name,
+              price: product.price,
+              rating: product.rating ?? 5,
+              image: product.image,
+              isBestSeller: product.isBestSeller,
+              isPublic: product.isPublic,
+              collectionSlug: product.collectionSlug || '',
+              sortOrder: index,
+            }),
+          })
+        )
+      );
+    } catch (_) {
+      // Silent — localStorage order is already saved above
+    }
+  }, [api]);
+
+
   // Direct browser → Cloudinary upload (HTTPS, no backend needed)
   const uploadImage = useCallback((file) => uploadToCloudinary(file), []);
 
-  return { products, loading, error, fetchProducts, addProduct, updateProduct, deleteProduct, uploadImage };
+  return { products, setProducts, loading, error, fetchProducts, addProduct, updateProduct, deleteProduct, updateProductOrder, uploadImage };
 }
+

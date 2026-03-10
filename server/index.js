@@ -224,7 +224,7 @@ app.get('/api/products', async (_req, res) => {
     const products = await Product.find({
       isPublic: { $ne: false },
       isActive: { $ne: false }
-    }).sort({ createdAt: -1 });
+    }).sort({ sortOrder: 1, createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -234,7 +234,7 @@ app.get('/api/products', async (_req, res) => {
 // GET /api/admin/products (protected)
 app.get('/api/admin/products', requireAuth, async (_req, res) => {
   try {
-    const products = await Product.find({ isActive: { $ne: false } }).sort({ createdAt: -1 });
+    const products = await Product.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -254,12 +254,34 @@ app.post('/api/products', requireAuth, async (req, res) => {
   }
 });
 
+// PUT /api/products/reorder (protected)
+app.put('/api/products/reorder', requireAuth, async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds must be an array' });
+    
+    const bulkOps = orderedIds.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { sortOrder: index }
+      }
+    }));
+    
+    await Product.bulkWrite(bulkOps);
+    res.json({ message: 'Order updated successfully' });
+  } catch (err) {
+    console.error('❌ Error reordering products:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PUT /api/products/:id  (protected)
 app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image, isBestSeller, collectionSlug, isPublic } = req.body;
+    const { name, price, rating, image, isBestSeller, collectionSlug, isPublic, sortOrder } = req.body;
     const updates = { name, price, rating, image, isBestSeller, collectionSlug };
     if (isPublic !== undefined) updates.isPublic = isPublic;
+    if (sortOrder !== undefined) updates.sortOrder = sortOrder;
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
