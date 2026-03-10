@@ -41,26 +41,27 @@ export default function CheckoutModal({ product, onClose }) {
         // Save order to backend (silent — WhatsApp opens regardless)
         try {
             const base = getApiBase();
-            await fetch(`${base}/api/orders`, {
+            await fetch(`${base}/api/biz/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'bypass-tunnel-reminder': 'true' },
                 body: JSON.stringify({
-                    customerName: formData.name,
-                    customerPhone: formData.phone,
-                    customerAddress: formData.address,
-                    customerCity: '',
-                    customerNotes: '',
+                    source: 'WEBSITE',
+                    paymentMethod: 'WHATSAPP',
+                    customer: {
+                        name: formData.name,
+                        phone: formData.phone,
+                        address: formData.address,
+                        city: '',
+                    },
                     items: [{
-                        productId: product._id || '',
+                        productId: product._id || null,
                         name: product.name,
-                        price: product.price,
-                        quantity: 1,
+                        unitPrice: 0,
+                        qty: 1,
                         image: product.image || '',
                     }],
-                    subtotal: 0,
                     deliveryCharge: 0,
-                    total: 0,
-                    paymentMethod: 'whatsapp',
+                    notes: `WhatsApp order — price: ${product.price}`,
                 }),
             });
         } catch (_) {
