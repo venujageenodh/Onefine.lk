@@ -15,3 +15,6 @@ uploads/
 .vscode/
 *.local
 .vercel
+/node_modules
+/node_modules
+/node_modules

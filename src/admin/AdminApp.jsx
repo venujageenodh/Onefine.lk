@@ -9,6 +9,7 @@ import InvoicesPage from './pages/InvoicesPage';
 import SuppliersPage from './pages/SuppliersPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import ProductsAdminPage from './pages/ProductsAdminPage';
+import logo from '../assets/onefine-logo.png';
 
 const NAV = [
     { key: 'dashboard', label: 'Dashboard', icon: '📊', perm: 'dashboard.view' },
@@ -44,7 +45,7 @@ export default function AdminApp() {
     if (!isAuthenticated) return <AdminLogin />;
 
     const allowedNav = NAV.filter(n =>
-        n.perm === '__owner__' ? admin?.role === 'OWNER' : hasPermission(n.perm) || hasPermission('*')
+        n.perm === '__owner__' ? (admin?.role === 'OWNER' || admin?.role === 'DEVELOPER') : hasPermission(n.perm) || hasPermission('*')
     );
     const ActivePage = PAGES[page] || DashboardPage;
 
@@ -100,19 +101,27 @@ export default function AdminApp() {
             {/* Main content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Top bar */}
-                <header className="bg-white border-b border-slate-100 px-4 lg:px-8 py-4 flex items-center gap-4 flex-shrink-0">
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100">
-                        <span className="text-xl">☰</span>
-                    </button>
-                    <div className="flex-1">
-                        <h1 className="font-bold text-[#1B2A4A] text-lg capitalize">
-                            {allowedNav.find(n => n.key === page)?.label || 'Dashboard'}
-                        </h1>
+                <header className="bg-white border-b border-slate-100 px-4 lg:px-8 py-4 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100">
+                            <span className="text-xl">☰</span>
+                        </button>
+                        <img src={logo} alt="OneFine logo" className="h-10 w-auto object-contain hidden sm:block" />
+                        <div className="leading-tight hidden sm:block">
+                            <h1 className="font-display text-xl tracking-[0.18em] text-[#1B2A4A] md:text-navy">ONEFINE ADMIN</h1>
+                            <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Managed by Team OneFine</p>
+                        </div>
+                        <div className="sm:hidden flex-1">
+                            <h1 className="font-bold text-[#1B2A4A] text-lg capitalize">
+                                {allowedNav.find(n => n.key === page)?.label || 'Dashboard'}
+                            </h1>
+                        </div>
                     </div>
-                    <a href="/" target="_blank" rel="noopener noreferrer"
-                        className="hidden sm:flex items-center gap-1.5 rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:border-[#1B2A4A] hover:text-[#1B2A4A] transition-colors">
-                        View Store ↗
-                    </a>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setPage('orders')} className="hidden sm:flex rounded-full border border-gold/50 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-navy hover:bg-gold/20 transition-colors">Orders</button>
+                        <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:border-navy hover:text-navy transition-colors">View Storefront</a>
+                        <button onClick={logout} className="rounded-full border border-red-200 px-4 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors">Sign Out</button>
+                    </div>
                 </header>
 
                 {/* Page content */}

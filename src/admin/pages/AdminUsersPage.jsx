@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { apiFetch } from '../utils';
 import { useAdminAuth } from '../AdminAuthContext';
 
-const ROLES = ['OWNER', 'SALES_ADMIN', 'INVENTORY_ADMIN', 'ACCOUNT_ADMIN'];
+const ROLES = ['OWNER', 'DEVELOPER', 'SALES_ADMIN', 'INVENTORY_ADMIN', 'ACCOUNT_ADMIN'];
 
 export default function AdminUsersPage() {
     const { token, admin: me } = useAdminAuth();
@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
         fetchAdmins();
     };
 
-    const ROLE_COLOR = { OWNER: 'bg-[#C9A84C]/20 text-[#8B6914]', SALES_ADMIN: 'bg-blue-100 text-blue-700', INVENTORY_ADMIN: 'bg-purple-100 text-purple-700', ACCOUNT_ADMIN: 'bg-green-100 text-green-700' };
+    const ROLE_COLOR = { OWNER: 'bg-[#C9A84C]/20 text-[#8B6914]', DEVELOPER: 'bg-[#2E3A5A] text-white', SALES_ADMIN: 'bg-blue-100 text-blue-700', INVENTORY_ADMIN: 'bg-purple-100 text-purple-700', ACCOUNT_ADMIN: 'bg-green-100 text-green-700' };
 
     return (
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">

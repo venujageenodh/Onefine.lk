@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'onefine_secret';
 // Default permissions per role
 const ROLE_PERMISSIONS = {
     OWNER: ['*'], // all permissions
+    DEVELOPER: ['*'],
     SALES_ADMIN: [
         'orders.view', 'orders.edit', 'orders.create',
         'quotations.view', 'quotations.edit', 'quotations.create',
@@ -63,9 +64,9 @@ function requirePermission(permission) {
     };
 }
 
-// OWNER only
+// OWNER or DEVELOPER only
 function requireOwner(req, res, next) {
-    if (req.adminRole !== 'OWNER') {
+    if (req.adminRole !== 'OWNER' && req.adminRole !== 'DEVELOPER') {
         return res.status(403).json({ error: 'Owner access required' });
     }
     next();
