@@ -224,7 +224,7 @@ app.get('/api/products', async (_req, res) => {
     const products = await Product.find({
       isPublic: { $ne: false },
       isActive: { $ne: false }
-    }).sort({ createdAt: -1 });
+    }).sort({ sortOrder: 1, createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -234,7 +234,7 @@ app.get('/api/products', async (_req, res) => {
 // GET /api/admin/products (protected)
 app.get('/api/admin/products', requireAuth, async (_req, res) => {
   try {
-    const products = await Product.find({ isActive: { $ne: false } }).sort({ createdAt: -1 });
+    const products = await Product.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -244,9 +244,10 @@ app.get('/api/admin/products', requireAuth, async (_req, res) => {
 // POST /api/products  (protected)
 app.post('/api/products', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image, isBestSeller, isPublic, collectionSlug } = req.body;
+    const { name, price, rating, image, isBestSeller, isPublic, collectionSlug, sortOrder } = req.body;
     const isPublicVal = isPublic !== undefined ? isPublic : true;
-    const product = await Product.create({ name, price, rating: rating ?? 5, image, isBestSeller, isPublic: isPublicVal, collectionSlug });
+    const orderNum = sortOrder !== undefined ? Number(sortOrder) || 0 : 0;
+    const product = await Product.create({ name, price, rating: rating ?? 5, image, isBestSeller, isPublic: isPublicVal, collectionSlug, sortOrder: orderNum });
     res.status(201).json(product);
   } catch (err) {
     console.error('❌ Error creating product:', err.message);
@@ -257,9 +258,10 @@ app.post('/api/products', requireAuth, async (req, res) => {
 // PUT /api/products/:id  (protected)
 app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
-    const { name, price, rating, image, isBestSeller, collectionSlug, isPublic } = req.body;
+    const { name, price, rating, image, isBestSeller, collectionSlug, isPublic, sortOrder } = req.body;
     const updates = { name, price, rating, image, isBestSeller, collectionSlug };
     if (isPublic !== undefined) updates.isPublic = isPublic;
+    if (sortOrder !== undefined) updates.sortOrder = Number(sortOrder) || 0;
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
@@ -281,6 +283,26 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
     res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/products/reorder (protected)
+app.post('/api/products/reorder', requireAuth, async (req, res) => {
+  try {
+    const { updates } = req.body;
+    if (!Array.isArray(updates)) return res.status(400).json({ error: 'Invalid payload' });
+
+    const bulkOps = updates.map((u) => ({
+      updateOne: {
+        filter: { _id: u.id },
+        update: { $set: { sortOrder: u.sortOrder } }
+      }
+    }));
+
+    await Product.bulkWrite(bulkOps);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -307,7 +329,7 @@ app.get('/api/collections/:slug/products', async (req, res) => {
         { collectionSlug: slug },
         { collectionSlug: '', name: { $regex: keyword, $options: 'i' } },
       ]
-    }).sort({ createdAt: -1 });
+    }).sort({ sortOrder: 1, createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });

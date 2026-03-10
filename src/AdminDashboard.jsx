@@ -106,14 +106,19 @@ function LoginScreen({ onLogin }) {
 export default function AdminDashboard({ embeddedMode = false }) {
   const auth = useAuth();
   const tokenToUse = auth?.token || sessionStorage.getItem('onefine_admin_token') || sessionStorage.getItem('onefine_biz_token');
-  const { products, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, uploadImage } =
+  const { products, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, uploadImage, reorderProducts } =
     useProducts(tokenToUse);
   const { collections, loading: colLoading } = useCollections();
 
   const isOffline = Boolean(productsError);
 
-  const [activeTab, setActiveTab] = React.useState('products'); // 'products' | 'collections'
-  const [form, setForm] = React.useState({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true });
+  const [activeTab, setActiveTab] = React.useState(() => localStorage.getItem('onefine_admin_products_tab') || 'products'); // 'products' | 'collections'
+  const [form, setForm] = React.useState({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true, sortOrder: 0 });
+
+  React.useEffect(() => {
+    localStorage.setItem('onefine_admin_products_tab', activeTab);
+  }, [activeTab]);
+
   const [editingId, setEditingId] = React.useState(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -138,6 +143,45 @@ export default function AdminDashboard({ embeddedMode = false }) {
   if (!embeddedMode && !auth.isAuthenticated) {
     return <LoginScreen onLogin={auth} />;
   }
+
+  const [draggedItemId, setDraggedItemId] = React.useState(null);
+
+  const handleDragStart = (e, id) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedItemId(id);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, targetId, currentList) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain');
+    setDraggedItemId(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const sourceIdx = currentList.findIndex(p => p._id === sourceId);
+    const targetIdx = currentList.findIndex(p => p._id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1) return;
+
+    const newList = [...currentList];
+    const [moved] = newList.splice(sourceIdx, 1);
+    newList.splice(targetIdx, 0, moved);
+
+    const updates = newList.map((p, index) => ({ id: p._id, sortOrder: index }));
+
+    try {
+      if (reorderProducts) {
+        await reorderProducts(updates, tokenToUse);
+        showToast('Sort order saved!');
+      }
+    } catch (err) {
+      showToast('Failed to save order', 'error');
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -176,6 +220,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
         isBestSeller: form.isBestSeller,
         isPublic: form.isPublic,
         collectionSlug: form.collectionSlug || '',
+        sortOrder: form.sortOrder,
       };
       if (editingId) {
         await updateProduct(editingId, payload, tokenToUse);
@@ -185,7 +230,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
         showToast('Product added!');
       }
       setEditingId(null);
-      setForm({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true });
+      setForm({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true, sortOrder: 0 });
     } catch (err) {
       showToast(err.message || 'Something went wrong', 'error');
     } finally {
@@ -211,6 +256,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
       collectionSlug: product.collectionSlug || '',
       isBestSeller: product.isBestSeller || false,
       isPublic: product.isPublic !== false,
+      sortOrder: product.sortOrder !== undefined ? product.sortOrder : 0,
     });
     setEditingId(product._id);
     setActiveTab('products');
@@ -246,7 +292,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
 
   // Quick-add brand: switch to Products tab with collection pre-selected
   const handleQuickAddBrand = (colSlug) => {
-    setForm({ name: '', price: '', image: '', collectionSlug: colSlug, isBestSeller: false, isPublic: true });
+    setForm({ name: '', price: '', image: '', collectionSlug: colSlug, isBestSeller: false, isPublic: true, sortOrder: 0 });
     setEditingId(null);
     setActiveTab('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -394,6 +440,14 @@ export default function AdminDashboard({ embeddedMode = false }) {
                   </div>
 
                   <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Sort Order</label>
+                    <input type="number" name="sortOrder" value={form.sortOrder} onChange={handleChange}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-1 focus:ring-gold bg-slate-50/50"
+                      placeholder="0" />
+                    <p className="mt-1 text-[10px] text-slate-400">Lower numbers appear first.</p>
+                  </div>
+
+                  <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">Collection (optional)</label>
                     <select name="collectionSlug" value={form.collectionSlug} onChange={handleChange}
                       className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-gold focus:ring-1 focus:ring-gold bg-slate-50/50">
@@ -443,7 +497,7 @@ export default function AdminDashboard({ embeddedMode = false }) {
                       {isSaving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Product'}
                     </button>
                     {editingId && (
-                      <button type="button" onClick={() => { setEditingId(null); setForm({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false }); }}
+                      <button type="button" onClick={() => { setEditingId(null); setForm({ name: '', price: '', image: '', collectionSlug: '', isBestSeller: false, isPublic: true, sortOrder: 0 }); }}
                         className="rounded-full border border-slate-200 py-2 text-xs font-medium text-slate-500 hover:text-navy">
                         Cancel Edit
                       </button>
@@ -469,9 +523,23 @@ export default function AdminDashboard({ embeddedMode = false }) {
                           🗂️ {col.name}
                           <a href={`/collection?slug=${col.slug}`} target="_blank" rel="noopener noreferrer" className="ml-2 text-[10px] font-normal text-gold hover:underline">View page ↗</a>
                         </h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2 ml-4">
                           {colProducts.map(product => (
-                            <ProductCard key={product._id} product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
+                            <div
+                              key={product._id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, product._id)}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, product._id, colProducts)}
+                              className={`transition-all relative cursor-move hover:scale-[1.01] ${draggedItemId === product._id ? 'opacity-50 scale-95' : 'opacity-100'}`}
+                            >
+                              <div className="absolute -left-4 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                              </div>
+                              <ProductCard product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -485,9 +553,23 @@ export default function AdminDashboard({ embeddedMode = false }) {
                     return (
                       <div>
                         <h3 className="font-display text-base text-navy mb-3 pb-2 border-b border-slate-100">📦 General Products</h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2 ml-4">
                           {general.map(product => (
-                            <ProductCard key={product._id} product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
+                            <div
+                              key={product._id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, product._id)}
+                              onDragOver={handleDragOver}
+                              onDrop={(e) => handleDrop(e, product._id, general)}
+                              className={`transition-all relative cursor-move hover:scale-[1.01] ${draggedItemId === product._id ? 'opacity-50 scale-95' : 'opacity-100'}`}
+                            >
+                              <div className="absolute -left-4 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                              </div>
+                              <ProductCard product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -616,6 +698,7 @@ function ProductCard({ product, onEdit, onDelete, resolveImageUrl }) {
           {product.isPublic === false && (
             <span className="inline-block rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">👁️ Hidden from Website</span>
           )}
+          <span className="inline-block rounded-full bg-slate-50 text-slate-400 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">Sort: {product.sortOrder || 0}</span>
         </div>
       </div>
       <div className="flex gap-1.5 flex-shrink-0">

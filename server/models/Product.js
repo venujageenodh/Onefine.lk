@@ -17,6 +17,7 @@ const productSchema = new mongoose.Schema({
     collectionSlug: { type: String, default: '' },
     isPublic: { type: Boolean, default: true },
     isActive: { type: Boolean, default: true },
+    sortOrder: { type: Number, default: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

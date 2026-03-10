@@ -72,11 +72,11 @@ export function useProducts() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller, isPublic, collectionSlug }, token) => {
+  const addProduct = useCallback(async ({ name, price, rating = 5, image, isBestSeller, isPublic, collectionSlug, sortOrder }, token) => {
     const res = await fetch(api('/products'), {
       method: 'POST',
       headers: { ...baseHeaders(), 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name, price, rating, image, isBestSeller, isPublic, collectionSlug: collectionSlug || '' }),
+      body: JSON.stringify({ name, price, rating, image, isBestSeller, isPublic, collectionSlug: collectionSlug || '', sortOrder }),
     });
     if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to create product'); }
     const created = await res.json();
@@ -92,6 +92,7 @@ export function useProducts() {
         name: updates.name, price: updates.price, rating: updates.rating ?? 5,
         image: updates.image, isBestSeller: updates.isBestSeller,
         isPublic: updates.isPublic, collectionSlug: updates.collectionSlug || '',
+        sortOrder: updates.sortOrder,
       }),
     });
     if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to update product'); }
@@ -109,8 +110,27 @@ export function useProducts() {
     setProducts((prev) => prev.filter((p) => p._id !== id));
   }, [api]);
 
+  const reorderProducts = useCallback(async (updates, token) => {
+    // Optimistic update
+    setProducts((prev) => {
+      const copy = [...prev];
+      updates.forEach(u => {
+        const item = copy.find(p => p._id === u.id);
+        if (item) item.sortOrder = u.sortOrder;
+      });
+      return copy.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    });
+
+    const res = await fetch(api('/products/reorder'), {
+      method: 'POST',
+      headers: { ...baseHeaders(), 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ updates }),
+    });
+    if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed to reorder products'); }
+  }, [api]);
+
   // Direct browser → Cloudinary upload (HTTPS, no backend needed)
   const uploadImage = useCallback((file) => uploadToCloudinary(file), []);
 
-  return { products, loading, error, fetchProducts, addProduct, updateProduct, deleteProduct, uploadImage };
+  return { products, loading, error, fetchProducts, addProduct, updateProduct, deleteProduct, reorderProducts, uploadImage };
 }

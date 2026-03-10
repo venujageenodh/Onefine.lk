@@ -34,8 +34,12 @@ const PAGES = {
 
 export default function AdminApp() {
     const { isAuthenticated, admin, logout, hasPermission } = useAdminAuth();
-    const [page, setPage] = useState('dashboard');
+    const [page, setPage] = useState(() => localStorage.getItem('onefine_admin_page') || 'dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    React.useEffect(() => {
+        localStorage.setItem('onefine_admin_page', page);
+    }, [page]);
 
     if (!isAuthenticated) return <AdminLogin />;
 
