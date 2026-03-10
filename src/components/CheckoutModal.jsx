@@ -5,6 +5,7 @@ import { HiX, HiCreditCard, HiCash } from 'react-icons/hi';
 export default function CheckoutModal({ product, onClose }) {
     const [view, setView] = useState('options');
     const [formData, setFormData] = useState({ name: '', address: '', phone: '' });
+    const [submitting, setSubmitting] = useState(false);
 
     if (!product) return null;
 
@@ -12,10 +13,17 @@ export default function CheckoutModal({ product, onClose }) {
         setView('whatsapp_form');
     };
 
-    const submitWhatsAppOrder = (e) => {
+    const getApiBase = () => {
+        const raw = import.meta.env.VITE_API_URL || '';
+        return raw.replace(/\/api\/?$/, '').replace(/\/$/, '');
+    };
+
+    const submitWhatsAppOrder = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
+
         const productUrl = product._id ? `${window.location.origin}/product/${product._id}` : window.location.origin;
-        
+
         const msg = `🛍️ *NEW ORDER REQUEST - ONEFINE* 🛍️\n\n` +
             `Hello! I'm interested in purchasing this item:\n\n` +
             `📦 *Product:* ${product.name}\n` +
@@ -30,7 +38,37 @@ export default function CheckoutModal({ product, onClose }) {
             `\n` +
             `_Please let me know the next steps to confirm my order!_ ✨`;
 
+        // Save order to backend (silent — WhatsApp opens regardless)
+        try {
+            const base = getApiBase();
+            await fetch(`${base}/api/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'bypass-tunnel-reminder': 'true' },
+                body: JSON.stringify({
+                    customerName: formData.name,
+                    customerPhone: formData.phone,
+                    customerAddress: formData.address,
+                    customerCity: '',
+                    customerNotes: '',
+                    items: [{
+                        productId: product._id || '',
+                        name: product.name,
+                        price: product.price,
+                        quantity: 1,
+                        image: product.image || '',
+                    }],
+                    subtotal: 0,
+                    deliveryCharge: 0,
+                    total: 0,
+                    paymentMethod: 'whatsapp',
+                }),
+            });
+        } catch (_) {
+            // Silent — don't block WhatsApp even if DB save fails
+        }
+
         window.open(`https://api.whatsapp.com/send?phone=94768121701&text=${encodeURIComponent(msg)}`, '_blank');
+        setSubmitting(false);
         onClose();
     };
 
@@ -205,9 +243,10 @@ export default function CheckoutModal({ product, onClose }) {
                             </button>
                             <button 
                                 type="submit" 
-                                className="flex-1 flex justify-center items-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:-translate-y-0.5 hover:bg-[#20bd5a]"
+                                disabled={submitting}
+                                className="flex-1 flex justify-center items-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:-translate-y-0.5 hover:bg-[#20bd5a] disabled:opacity-70 disabled:cursor-not-allowed"
                             >
-                                <FaWhatsapp className="text-lg" /> Send
+                                <FaWhatsapp className="text-lg" /> {submitting ? 'Saving…' : 'Send'}
                             </button>
                         </div>
                     </form>
