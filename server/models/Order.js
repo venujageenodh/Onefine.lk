@@ -49,13 +49,12 @@ const orderSchema = new mongoose.Schema({
     codAllowed: { type: Boolean, default: true },
 }, { timestamps: true });
 
-orderSchema.pre('save', async function (next) {
+orderSchema.pre('save', async function () {
     if (!this.orderNumber) {
         const year = new Date().getFullYear();
         const count = await mongoose.model('Order').countDocuments();
         this.orderNumber = `ORD-${year}-${String(count + 1).padStart(4, '0')}`;
     }
-    next();
 });
 
 module.exports = mongoose.model('Order', orderSchema);

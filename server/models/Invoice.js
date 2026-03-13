@@ -40,7 +40,7 @@ const invoiceSchema = new mongoose.Schema({
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminUser', default: null },
 }, { timestamps: true });
 
-invoiceSchema.pre('save', async function (next) {
+invoiceSchema.pre('save', async function () {
     if (!this.invoiceNumber) {
         const year = new Date().getFullYear();
         const last = await mongoose.model('Invoice').findOne({ invoiceNumber: new RegExp(`^INV-${year}-`) }).sort({ _id: -1 });
@@ -59,7 +59,6 @@ invoiceSchema.pre('save', async function (next) {
     if (this.amountPaid <= 0) this.paymentStatus = 'UNPAID';
     else if (this.amountPaid >= this.total) this.paymentStatus = 'PAID';
     else this.paymentStatus = 'PART_PAID';
-    next();
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);
