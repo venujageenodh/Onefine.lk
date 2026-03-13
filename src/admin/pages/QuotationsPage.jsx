@@ -3,7 +3,7 @@ import { apiFetch, formatLKR, formatDate, StatusBadge, apiUrl } from '../utils';
 import { useAdminAuth } from '../AdminAuthContext';
 
 function QuotationForm({ onSave, token }) {
-    const [customer, setCustomer] = useState({ name: '', phone: '', email: '', address: '', city: '', company: '' });
+    const [customer, setCustomer] = useState({ name: '', phone: '', email: '', address: '', company: '' });
     const [items, setItems] = useState([{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const [extra, setExtra] = useState({ discountAmount: 0, deliveryCharge: 0, tax: 0, notes: '', validUntil: '' });
     const [saving, setSaving] = useState(false);
@@ -33,7 +33,7 @@ function QuotationForm({ onSave, token }) {
             <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
                 <h3 className="text-sm font-bold text-[#1B2A4A] uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Customer Details</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                    {[['name', 'Customer Name *', 'e.g. John Doe'], ['phone', 'Phone', 'e.g. 077 123 4567'], ['email', 'Email Address', 'e.g. john@example.com'], ['company', 'Company', 'e.g. Acme Corp'], ['address', 'Address', 'e.g. 123 Main St'], ['city', 'City', 'e.g. Colombo']].map(([k, l, p]) => (
+                    {[['name', 'Customer Name *', 'e.g. John Doe'], ['phone', 'Phone', 'e.g. 077 123 4567'], ['email', 'Email Address', 'e.g. john@example.com'], ['company', 'Company', 'e.g. Acme Corp'], ['address', 'Address', 'e.g. 123 Main St']].map(([k, l, p]) => (
                         <div key={k} className="relative group">
                             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 transition-colors group-focus-within:text-[#C9A84C]">{l}</label>
                             <input value={customer[k]} onChange={e => setCustomer(c => ({ ...c, [k]: e.target.value }))}
