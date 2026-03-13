@@ -41,8 +41,15 @@ const quotationSchema = new mongoose.Schema({
 quotationSchema.pre('save', async function (next) {
     if (!this.qNumber) {
         const year = new Date().getFullYear();
-        const count = await mongoose.model('Quotation').countDocuments();
-        this.qNumber = `QT-${year}-${String(count + 1).padStart(4, '0')}`;
+        const last = await mongoose.model('Quotation').findOne({ qNumber: new RegExp(`^QT-${year}-`) }).sort({ _id: -1 });
+        let nextNum = 1;
+        if (last && last.qNumber) {
+            const parts = last.qNumber.split('-');
+            if (parts.length === 3) {
+                nextNum = parseInt(parts[2], 10) + 1;
+            }
+        }
+        this.qNumber = `QT-${year}-${String(nextNum).padStart(4, '0')}`;
     }
     next();
 });
