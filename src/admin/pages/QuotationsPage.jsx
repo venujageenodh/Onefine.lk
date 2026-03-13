@@ -175,6 +175,7 @@ export default function QuotationsPage() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('list'); // list | new | edit
+    const [viewMode, setViewMode] = useState(() => localStorage.getItem('quotation_view_mode') || 'table');
     const [editingQuotation, setEditingQuotation] = useState(null);
 
     const fetchQuotations = useCallback(async () => {
@@ -187,6 +188,12 @@ export default function QuotationsPage() {
     }, [token]);
 
     useEffect(() => { fetchQuotations(); }, [fetchQuotations]);
+
+    const toggleViewMode = () => {
+        const next = viewMode === 'table' ? 'cards' : 'table';
+        setViewMode(next);
+        localStorage.setItem('quotation_view_mode', next);
+    };
 
     const convertToInvoice = async (id) => {
         if (!window.confirm('Convert this quotation to an invoice?')) return;
@@ -219,63 +226,123 @@ export default function QuotationsPage() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <span className="font-bold text-[#1B2A4A]">Quotations ({total})</span>
+                <div className="flex items-center gap-3">
+                    <span className="font-bold text-[#1B2A4A]">Quotations ({total})</span>
+                    <button onClick={toggleViewMode} className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors" title={viewMode === 'table' ? 'Switch to Card View' : 'Switch to Table View'}>
+                        {viewMode === 'table' ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                        )}
+                    </button>
+                </div>
                 <button onClick={() => setView('new')}
                     className="rounded-full bg-[#1B2A4A] px-5 py-2 text-xs font-bold text-white hover:bg-[#243a5e]">
                     + New Quotation
                 </button>
             </div>
 
-            <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
-                            <tr>
-                                {['QT #', 'Customer', 'Total', 'Valid Until', 'Status', 'Actions'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left font-semibold">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {loading ? (
-                                <tr><td colSpan={6} className="py-10 text-center text-slate-400">Loading…</td></tr>
-                            ) : quotations.map(q => (
-                                <tr key={q._id} className="hover:bg-slate-50/50">
-                                    <td className="px-4 py-3 font-mono text-xs font-bold text-[#1B2A4A]">{q.qNumber}</td>
-                                    <td className="px-4 py-3">
-                                        <p className="font-medium text-[#1B2A4A]">{q.customer?.name}</p>
-                                        <p className="text-xs text-slate-400">{q.customer?.company}</p>
-                                    </td>
-                                    <td className="px-4 py-3 font-semibold">{formatLKR(q.total)}</td>
-                                    <td className="px-4 py-3 text-xs text-slate-400">{formatDate(q.validUntil)}</td>
-                                    <td className="px-4 py-3"><StatusBadge status={q.status} /></td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex gap-2 flex-wrap">
-                                            <button onClick={() => downloadPdf(q._id)}
-                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:border-[#C9A84C]">
-                                                PDF
-                                            </button>
-                                            <button onClick={() => { setEditingQuotation(q); setView('edit'); }}
-                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-blue-500 hover:bg-blue-50">
-                                                Edit
-                                            </button>
-                                            {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
-                                                <button onClick={() => convertToInvoice(q._id)}
-                                                    className="rounded-full border border-[#C9A84C]/30 px-2.5 py-1 text-[10px] font-bold text-[#C9A84C] hover:bg-[#C9A84C]/10">
-                                                    → Invoice
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
+            {viewMode === 'table' ? (
+                <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
+                                <tr>
+                                    {['QT #', 'Customer', 'Total', 'Valid Until', 'Status', 'Actions'].map(h => (
+                                        <th key={h} className="px-4 py-3 text-left font-semibold">{h}</th>
+                                    ))}
                                 </tr>
-                            ))}
-                            {!loading && !quotations.length && (
-                                <tr><td colSpan={6} className="py-10 text-center text-slate-400">No quotations yet</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {loading ? (
+                                    <tr><td colSpan={6} className="py-10 text-center text-slate-400">Loading…</td></tr>
+                                ) : quotations.map(q => (
+                                    <tr key={q._id} className="hover:bg-slate-50/50">
+                                        <td className="px-4 py-3 font-mono text-xs font-bold text-[#1B2A4A]">{q.qNumber}</td>
+                                        <td className="px-4 py-3">
+                                            <p className="font-medium text-[#1B2A4A]">{q.customer?.name}</p>
+                                            <p className="text-xs text-slate-400">{q.customer?.company}</p>
+                                        </td>
+                                        <td className="px-4 py-3 font-semibold">{formatLKR(q.total)}</td>
+                                        <td className="px-4 py-3 text-xs text-slate-400">{formatDate(q.validUntil)}</td>
+                                        <td className="px-4 py-3"><StatusBadge status={q.status} /></td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex gap-2 flex-wrap">
+                                                <button onClick={() => downloadPdf(q._id)}
+                                                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:border-[#C9A84C]">
+                                                    PDF
+                                                </button>
+                                                <button onClick={() => { setEditingQuotation(q); setView('edit'); }}
+                                                    className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-blue-500 hover:bg-blue-50">
+                                                    Edit
+                                                </button>
+                                                {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
+                                                    <button onClick={() => convertToInvoice(q._id)}
+                                                        className="rounded-full border border-[#C9A84C]/30 px-2.5 py-1 text-[10px] font-bold text-[#C9A84C] hover:bg-[#C9A84C]/10">
+                                                        → Invoice
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {!loading && !quotations.length && (
+                                    <tr><td colSpan={6} className="py-10 text-center text-slate-400">No quotations yet</td></tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {loading ? (
+                        <div className="col-span-full py-10 text-center text-slate-400 bg-white rounded-2xl border border-slate-100">Loading…</div>
+                    ) : quotations.map(q => (
+                        <div key={q._id} className="group rounded-2xl bg-white border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-3">
+                                <StatusBadge status={q.status} />
+                            </div>
+                            <div className="mb-4">
+                                <p className="font-mono text-xs font-bold text-slate-400 mb-1">{q.qNumber}</p>
+                                <h3 className="font-bold text-[#1B2A4A] text-lg leading-tight group-hover:text-[#C9A84C] transition-colors">{q.customer?.name}</h3>
+                                <p className="text-sm text-slate-500">{q.customer?.company || 'Personal Account'}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between border-y border-slate-50 py-3 my-4">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount</p>
+                                    <p className="font-black text-[#1B2A4A]">{formatLKR(q.total)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valid Until</p>
+                                    <p className="text-sm font-semibold text-slate-600">{formatDate(q.validUntil)}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 mt-4">
+                                <div className="flex gap-1.5 font-bold">
+                                    <button onClick={() => downloadPdf(q._id)} className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 hover:bg-slate-100 flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        PDF
+                                    </button>
+                                    <button onClick={() => { setEditingQuotation(q); setView('edit'); }} className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-600 hover:bg-blue-100 flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        Edit
+                                    </button>
+                                </div>
+                                {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
+                                    <button onClick={() => convertToInvoice(q._id)} className="rounded-lg bg-gradient-to-r from-[#C9A84C] to-yellow-600 px-3 py-2 text-xs text-white shadow-sm hover:shadow-md flex items-center gap-1.5">
+                                        Invoice →
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {!loading && !quotations.length && (
+                        <div className="col-span-full py-10 text-center text-slate-400 bg-white rounded-2xl border border-slate-100">No quotations yet</div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
