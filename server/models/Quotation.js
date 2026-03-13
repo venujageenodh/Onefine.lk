@@ -38,7 +38,7 @@ const quotationSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate qNumber before saving
-quotationSchema.pre('save', async function (next) {
+quotationSchema.pre('save', async function () {
     if (!this.qNumber) {
         const year = new Date().getFullYear();
         const last = await mongoose.model('Quotation').findOne({ qNumber: new RegExp(`^QT-${year}-`) }).sort({ _id: -1 });
@@ -51,7 +51,6 @@ quotationSchema.pre('save', async function (next) {
         }
         this.qNumber = `QT-${year}-${String(nextNum).padStart(4, '0')}`;
     }
-    next();
 });
 
 module.exports = mongoose.model('Quotation', quotationSchema);
