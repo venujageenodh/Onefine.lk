@@ -7,9 +7,19 @@ const ADMIN_KEY = 'onefine_biz_admin';
 const AuthContext = createContext(null);
 
 export function AdminAuthProvider({ children }) {
-    const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) || null);
+    const [token, setToken] = useState(() =>
+        sessionStorage.getItem(TOKEN_KEY) || sessionStorage.getItem('onefine_admin_token') || null
+    );
     const [admin, setAdmin] = useState(() => {
-        try { return JSON.parse(sessionStorage.getItem(ADMIN_KEY) || 'null'); } catch { return null; }
+        try {
+            const stored = sessionStorage.getItem(ADMIN_KEY);
+            if (stored) return JSON.parse(stored);
+            // Fallback: If we have a legacy token but no admin object, assume OWNER permissions
+            if (sessionStorage.getItem('onefine_admin_token')) {
+                return { name: 'Legacy Admin', role: 'OWNER', permissions: ['*'] };
+            }
+            return null;
+        } catch { return null; }
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);

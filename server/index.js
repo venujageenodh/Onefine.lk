@@ -1,12 +1,12 @@
 // Allow IPv4 first for generic DNS issues (safe on Vercel)
-const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first');
-// Force Google DNS to bypass potential local ISP/router SRV lookup blocks
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4']);
-} catch (e) {
-  console.warn('⚠️ Could not set custom DNS servers:', e.message);
-}
+// const dns = require('dns');
+// dns.setDefaultResultOrder('ipv4first');
+// // Force Google DNS to bypass potential local ISP/router SRV lookup blocks
+// try {
+//   dns.setServers(['8.8.8.8', '8.8.4.4']);
+// } catch (e) {
+//   console.warn('⚠️ Could not set custom DNS servers:', e.message);
+// }
 
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
@@ -260,14 +260,14 @@ app.put('/api/products/reorder', requireAuth, async (req, res) => {
   try {
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds must be an array' });
-    
+
     const bulkOps = orderedIds.map((id, index) => ({
       updateOne: {
         filter: { _id: id },
         update: { sortOrder: index }
       }
     }));
-    
+
     await Product.bulkWrite(bulkOps);
     res.json({ message: 'Order updated successfully' });
   } catch (err) {
