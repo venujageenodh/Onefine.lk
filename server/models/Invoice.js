@@ -43,8 +43,15 @@ const invoiceSchema = new mongoose.Schema({
 invoiceSchema.pre('save', async function (next) {
     if (!this.invoiceNumber) {
         const year = new Date().getFullYear();
-        const count = await mongoose.model('Invoice').countDocuments();
-        this.invoiceNumber = `INV-${year}-${String(count + 1).padStart(4, '0')}`;
+        const last = await mongoose.model('Invoice').findOne({ invoiceNumber: new RegExp(`^INV-${year}-`) }).sort({ _id: -1 });
+        let nextNum = 1;
+        if (last && last.invoiceNumber) {
+            const parts = last.invoiceNumber.split('-');
+            if (parts.length === 3) {
+                nextNum = parseInt(parts[2], 10) + 1;
+            }
+        }
+        this.invoiceNumber = `INV-${year}-${String(nextNum).padStart(4, '0')}`;
     }
     // Recalculate balance
     this.balanceDue = Math.max(0, this.total - this.amountPaid);
