@@ -36,8 +36,8 @@ router.post('/', requireAdminAuth, requirePermission('invoices.view'), async (re
             discountAmount: Number(discountAmount),
             deliveryCharge: Number(deliveryCharge),
             tax: Number(tax), taxAmount, total,
-            notes, dueDate, orderId,
-            createdBy: req.admin._id,
+            notes, dueDate: dueDate || undefined, orderId,
+            createdBy: req.admin._id || null,
         });
         res.status(201).json(invoice);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -65,7 +65,7 @@ router.post('/:id/payment', requireAdminAuth, requirePermission('payments.create
             amount: Number(amount),
             method, reference, slipUrl,
             notes, date: date || new Date(),
-            adminId: req.admin._id,
+            adminId: req.admin._id || null,
         });
 
         // Update invoice amountPaid

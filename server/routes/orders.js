@@ -102,8 +102,8 @@ router.put('/:id/status', requireAdminAuth, requirePermission('orders.edit'), as
         order.timeline.push({
             status,
             note: note || '',
-            adminId: req.admin._id,
-            adminName: req.admin.name,
+            adminId: req.admin._id || null,
+            adminName: req.admin.name || 'Admin',
             at: new Date(),
         });
         await order.save();
