@@ -3,6 +3,22 @@ import { useProducts } from './hooks/useProducts';
 import { useCollections } from './hooks/useCollections';
 import { useAuth } from './hooks/useAuth';
 import logo from './assets/onefine-logo.png';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Build full API URL — same logic as useProducts/useAuth hooks
 function apiUrl(path) {
@@ -106,7 +122,7 @@ function LoginScreen({ onLogin }) {
 export default function AdminDashboard({ embeddedMode = false }) {
   const auth = useAuth();
   const tokenToUse = auth?.token || sessionStorage.getItem('onefine_admin_token') || sessionStorage.getItem('onefine_biz_token');
-  const { products, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, uploadImage } =
+  const { products, setProducts, loading: productsLoading, error: productsError, addProduct, updateProduct, deleteProduct, updateProductOrder, uploadImage } =
     useProducts(tokenToUse);
   const { collections, loading: colLoading } = useCollections();
 
@@ -215,6 +231,29 @@ export default function AdminDashboard({ embeddedMode = false }) {
     setEditingId(product._id);
     setActiveTab('products');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event, currentList) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    
+    // Move within the local state immediately
+    const oldIndex = products.findIndex((p) => p._id === active.id);
+    const newIndex = products.findIndex((p) => p._id === over.id);
+    const newProducts = arrayMove(products, oldIndex, newIndex);
+    setProducts(newProducts);
+
+    try {
+      await updateProductOrder(newProducts, tokenToUse);
+    } catch(err) {
+      showToast('Error saving order', 'error');
+      // Revert on error could be implemented here
+    }
   };
 
   // ── Collection helpers ──────────────────────────────────────────────────────
@@ -471,11 +510,15 @@ export default function AdminDashboard({ embeddedMode = false }) {
                           🗂️ {col.name}
                           <a href={`/collection?slug=${col.slug}`} target="_blank" rel="noopener noreferrer" className="ml-2 text-[10px] font-normal text-gold hover:underline">View page ↗</a>
                         </h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {colProducts.map(product => (
-                            <ProductCard key={product._id} product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
-                          ))}
-                        </div>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, colProducts)}>
+                          <SortableContext items={colProducts.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {colProducts.map(product => (
+                                <SortableProductCard key={product._id} product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       </div>
                     );
                   })}
@@ -487,11 +530,15 @@ export default function AdminDashboard({ embeddedMode = false }) {
                     return (
                       <div>
                         <h3 className="font-display text-base text-navy mb-3 pb-2 border-b border-slate-100">📦 General Products</h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {general.map(product => (
-                            <ProductCard key={product._id} product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
-                          ))}
-                        </div>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, general)}>
+                          <SortableContext items={general.map(p => p._id)} strategy={verticalListSortingStrategy}>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {general.map(product => (
+                                <SortableProductCard key={product._id} product={product} onEdit={handleEdit} onDelete={handleDelete} resolveImageUrl={resolveImageUrl} />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       </div>
                     );
                   })()}
@@ -601,28 +648,60 @@ export default function AdminDashboard({ embeddedMode = false }) {
   );
 }
 
-// Product card sub-component
-function ProductCard({ product, onEdit, onDelete, resolveImageUrl }) {
+// Sortable wrapper
+function SortableProductCard({ product, onEdit, onDelete, resolveImageUrl }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 2 : 1,
+  };
+
   return (
-    <div className="flex gap-4 items-start rounded-xl bg-white border border-slate-100 p-4 shadow-sm hover:shadow-soft transition-shadow">
+    <div ref={setNodeRef} style={style}>
+      <ProductCard product={product} onEdit={onEdit} onDelete={onDelete} resolveImageUrl={resolveImageUrl} dragListeners={listeners} dragAttributes={attributes} />
+    </div>
+  );
+}
+
+// Product card sub-component
+function ProductCard({ product, onEdit, onDelete, resolveImageUrl, dragListeners, dragAttributes }) {
+  return (
+    <div className="flex gap-3 items-center rounded-xl bg-white border border-slate-100 p-3 shadow-sm hover:shadow-soft transition-shadow">
+      <div 
+        className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-navy p-1 transition-colors"
+        {...dragAttributes}
+        {...dragListeners}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+      </div>
       {product.image && (
-        <img src={resolveImageUrl(product.image)} alt={product.name} className="h-14 w-14 rounded-lg object-cover border border-slate-100 flex-shrink-0" />
+        <img src={resolveImageUrl(product.image)} alt={product.name} className="h-12 w-12 rounded-lg object-cover border border-slate-100 flex-shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-xs text-navy truncate">{product.name}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{product.price}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">{product.price}</p>
         <div className="flex flex-wrap gap-1 mt-1">
           {product.collectionSlug && (
-            <span className="inline-block rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-semibold text-navy">{product.collectionSlug}</span>
+            <span className="inline-block rounded-full bg-gold/10 px-2 py-0.5 text-[9px] font-semibold text-navy">{product.collectionSlug}</span>
           )}
           {product.isPublic === false && (
-            <span className="inline-block rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-semibold border border-slate-200">👁️ Hidden from Website</span>
+            <span className="inline-block rounded-full bg-slate-100 text-slate-500 px-2 py-0.5 text-[9px] font-semibold border border-slate-200">👁️ Hidden from Website</span>
           )}
         </div>
       </div>
       <div className="flex gap-1.5 flex-shrink-0">
-        <button onClick={() => onEdit(product)} className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-600 hover:border-navy hover:text-navy">Edit</button>
-        <button onClick={() => onDelete(product._id)} className="rounded-full border border-red-200 px-3 py-1 text-[11px] font-medium text-red-500 hover:bg-red-50">Del</button>
+        <button onClick={(e) => { e.stopPropagation(); onEdit(product); }} className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-600 hover:border-navy hover:text-navy">Edit</button>
+        <button onClick={(e) => { e.stopPropagation(); onDelete(product._id); }} className="rounded-full border border-red-200 px-3 py-1 text-[11px] font-medium text-red-500 hover:bg-red-50">Del</button>
       </div>
     </div>
   );
