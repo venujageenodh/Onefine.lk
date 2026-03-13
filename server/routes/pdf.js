@@ -6,109 +6,153 @@ const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
 const { requireAdminAuth } = require('../middleware/auth');
 
-const GOLD = '#C9A84C';
+const GOLD = '#000000'; // Using solid black for text
 const NAVY = '#1B2A4A';
+const LIGHT_GRAY = '#F8F9FA';
 
 function formatLKR(amount) {
-    return `Rs. ${Number(amount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
+    return `LKR ${Number(amount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
 }
 
 function buildHeader(doc, title, number, date) {
-    doc.rect(0, 0, doc.page.width, 110).fill(NAVY);
-    doc.fillColor('white')
-        .font('Helvetica-Bold').fontSize(22).text('ONEFINE', 40, 30)
-        .font('Helvetica').fontSize(9).fillColor(GOLD)
-        .text('CORPORATE GIFTING — PREMIUM BRANDED PRODUCTS', 40, 55)
-        .fillColor('white').fontSize(9)
-        .text('info@onefine.lk  |  +94 70 123 4567  |  onefine.lk', 40, 68);
+    // Top Left: Company Info
+    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(16).text('One Fine', 40, 40);
+    doc.fillColor('#333').font('Helvetica').fontSize(9)
+        .text('Venuja Geenodh', 40, 60)
+        .text('20/9', 40, 72)
+        .text('Green Terrance,Parakandeniya', 40, 84)
+        .text('Imbulgoda', 40, 96)
+        .text('📞 +94 70 345 1261  ✉ venujageenodh@gmail.com', 40, 108);
 
-    doc.font('Helvetica-Bold').fontSize(18).fillColor(GOLD)
-        .text(title, 40, 90, { align: 'right', width: doc.page.width - 80 });
-    doc.font('Helvetica').fontSize(9).fillColor('white')
-        .text(`${number} | ${date}`, 40, 112, { align: 'right', width: doc.page.width - 80 });
+    // Top Right: Document Title
+    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(24).text(title, 40, 55, { align: 'right', width: doc.page.width - 80 });
 
-    doc.moveDown(6);
+    // Header Divider
+    doc.moveTo(40, 125).lineTo(doc.page.width - 40, 125).strokeColor('#DDD').stroke();
+
+    doc.y = 140;
 }
 
-function buildCustomerBox(doc, customer) {
-    const y = doc.y + 10;
-    doc.roundedRect(40, y, 230, 90, 6).fillAndStroke('#F8F8F8', '#E5E5E5');
-    doc.fillColor(NAVY).font('Helvetica-Bold').fontSize(9).text('BILL TO', 52, y + 10);
-    doc.font('Helvetica').fontSize(9).fillColor('#333')
-        .text(customer.name, 52, y + 22)
-        .text(customer.company || '', 52, y + 34)
-        .text(customer.address || '', 52, y + 46)
-        .text(customer.city || '', 52, y + 58)
-        .text(customer.phone || customer.email || '', 52, y + 70);
-    doc.moveDown(7);
+function buildCustomerBox(doc, customer, number, date, title) {
+    const y = 145;
+    // Bill To Section (Left)
+    doc.fillColor('#333').font('Helvetica-Bold').fontSize(9).text('BILL TO', 40, y);
+    doc.fillColor('#000').font('Helvetica-Bold').fontSize(11).text(customer.name.toUpperCase(), 40, y + 14);
+    doc.fillColor('#333').font('Helvetica').fontSize(9)
+        .text(customer.company || '', 40, y + 28)
+        .text(customer.address || '', 40, y + 40)
+        .text(customer.city || '', 40, y + 52)
+        .text(`📞 ${customer.phone || ''}`, 40, y + 64)
+        .text(customer.website || '', 40, y + 76);
+
+    // Metadata Section (Right)
+    const midX = doc.page.width - 240;
+    doc.font('Helvetica-Bold').fontSize(10);
+    doc.text(`${title}#`, midX, y + 14);
+    doc.text(`${title} Date:`, midX, y + 32);
+
+    doc.font('Helvetica').fontSize(10);
+    doc.text(number, midX + 100, y + 14, { align: 'right', width: 100 });
+    doc.text(date, midX + 100, y + 32, { align: 'right', width: 100 });
+
+    doc.y = y + 100;
 }
 
 function buildItemsTable(doc, items) {
-    const cols = { desc: 40, qty: 310, unit: 360, disc: 420, total: 480 };
-    const y = doc.y + 5;
+    const cols = { hash: 40, desc: 65, qty: 310, price: 370, total: 470 };
+    const y = doc.y;
 
-    // Header row
-    doc.rect(40, y, doc.page.width - 80, 20).fill(NAVY);
-    doc.fillColor('white').font('Helvetica-Bold').fontSize(8)
-        .text('DESCRIPTION', cols.desc + 4, y + 6)
-        .text('QTY', cols.qty, y + 6)
-        .text('UNIT PRICE', cols.unit, y + 6)
-        .text('DISC%', cols.disc, y + 6)
-        .text('TOTAL', cols.total, y + 6);
+    // Table Header
+    doc.rect(40, y, doc.page.width - 80, 22).fill('#F1F5F9');
+    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(9)
+        .text('#', cols.hash + 5, y + 7)
+        .text('DESCRIPTION', cols.desc, y + 7)
+        .text('QTY', cols.qty, y + 7, { width: 40, align: 'center' })
+        .text('PRICE', cols.price, y + 7, { width: 90, align: 'center' })
+        .text('TOTAL', cols.total, y + 7, { width: 90, align: 'right' });
 
-    let rowY = y + 20;
-    let running = 0;
+    let rowY = y + 22;
+    doc.moveTo(40, rowY).lineTo(doc.page.width - 40, rowY).strokeColor('#1B2A4A').lineWidth(1).stroke();
+    rowY += 10;
+
     items.forEach((item, i) => {
         const lineTotal = item.unitPrice * item.qty;
         const lineDiscount = lineTotal * (item.discount || 0) / 100;
         const net = lineTotal - lineDiscount;
-        running += net;
-        const bg = i % 2 === 0 ? 'white' : '#F5F7FA';
-        doc.rect(40, rowY, doc.page.width - 80, 20).fill(bg);
-        doc.fillColor('#222').font('Helvetica').fontSize(8)
-            .text(`${item.name}${item.description ? ' — ' + item.description : ''}`, cols.desc + 4, rowY + 6, { width: 260 })
-            .text(item.qty, cols.qty, rowY + 6)
-            .text(formatLKR(item.unitPrice), cols.unit, rowY + 6)
-            .text(item.discount ? `${item.discount}%` : '—', cols.disc, rowY + 6)
-            .text(formatLKR(net), cols.total, rowY + 6);
-        rowY += 20;
+
+        doc.fillColor('#000').font('Helvetica').fontSize(10)
+            .text(i + 1, cols.hash + 5, rowY)
+            .font('Helvetica-Bold').text(item.name, cols.desc, rowY, { width: 230 });
+
+        if (item.description) {
+            doc.font('Helvetica').fontSize(8).fillColor('#666').text(item.description, cols.desc, doc.y + 2, { width: 230 });
+        }
+
+        const currentY = doc.y;
+        doc.fillColor('#000').font('Helvetica').fontSize(10)
+            .text(item.qty, cols.qty, rowY, { width: 40, align: 'center' })
+            .text(formatLKR(item.unitPrice), cols.price, rowY, { width: 90, align: 'right' })
+            .text(formatLKR(net), cols.total, rowY, { width: 90, align: 'right' });
+
+        rowY = Math.max(currentY, rowY + 20) + 10;
+
+        // Horizontal line between items if needed, or just padding
+        doc.moveTo(40, rowY - 5).lineTo(doc.page.width - 40, rowY - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
     });
 
-    doc.y = rowY + 5;
-    return running;
+    doc.y = rowY;
 }
 
-function buildTotalsBox(doc, data) {
-    const x = doc.page.width - 220;
-    let y = doc.y + 10;
-    const rows = [
-        ['Subtotal', formatLKR(data.subtotal)],
-        data.discountAmount > 0 ? ['Discount', `- ${formatLKR(data.discountAmount)}`] : null,
-        data.deliveryCharge > 0 ? ['Delivery', formatLKR(data.deliveryCharge)] : null,
-        data.taxAmount > 0 ? [`Tax (${data.tax}%)`, formatLKR(data.taxAmount)] : null,
-    ].filter(Boolean);
+function buildTotalsBox(doc, data, balanceOnly = false) {
+    const x = doc.page.width - 260;
+    let y = doc.y + 5;
 
-    rows.forEach(([label, val]) => {
-        doc.fillColor('#555').font('Helvetica').fontSize(9).text(label, x, y);
-        doc.text(val, x + 80, y, { align: 'right', width: 100 });
-        y += 16;
-    });
-    // Total
-    doc.rect(x - 10, y, 190, 24).fill(NAVY);
-    doc.fillColor('white').font('Helvetica-Bold').fontSize(10)
-        .text('TOTAL', x, y + 7)
-        .text(formatLKR(data.total), x + 80, y + 7, { align: 'right', width: 100 });
+    const rowHeight = 22;
+
+    const addRow = (label, value, isBold = false, hasBg = false) => {
+        if (hasBg) {
+            doc.rect(x, y, 220, rowHeight).fill('#F1F5F9');
+        }
+        doc.fillColor('#333').font(isBold ? 'Helvetica-Bold' : 'Helvetica').fontSize(10)
+            .text(label, x + 10, y + 6);
+        doc.text(value, x + 100, y + 6, { align: 'right', width: 110 });
+
+        doc.moveTo(x, y + rowHeight).lineTo(x + 220, y + rowHeight).strokeColor('#DDD').lineWidth(0.5).stroke();
+        y += rowHeight;
+    };
+
+    addRow('SUB TOTAL', formatLKR(data.subtotal));
+    if (data.discountAmount > 0) addRow('DISCOUNT', `- ${formatLKR(data.discountAmount)}`);
+    addRow('TOTAL', formatLKR(data.total), true);
+
+    if (data.balanceDue !== undefined) {
+        addRow('PAID', `- ${formatLKR(data.amountPaid || 0)}`);
+        addRow('BALANCE DUE', formatLKR(data.balanceDue), true, true);
+    }
+
     doc.y = y + 40;
 }
 
 function buildFooter(doc) {
-    const y = doc.page.height - 60;
-    doc.rect(0, y, doc.page.width, 60).fill(NAVY);
-    doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(8)
-        .text('Thank you for choosing OneFine!', 40, y + 10);
-    doc.fillColor('white').font('Helvetica').fontSize(7)
-        .text('OneFine Corporate Gifting  |  info@onefine.lk  |  onefine.lk  |  +94 70 123 4567', 40, y + 22)
-        .text('Bank: Commercial Bank  |  A/C: 1234567890  |  Branch: Colombo', 40, y + 36);
+    const y = doc.y > doc.page.height - 200 ? doc.y : doc.page.height - 220;
+
+    // Bottom Left: Terms and Instructions
+    doc.fillColor('#000').font('Helvetica-Bold').fontSize(10).text('Terms & Conditions:', 40, y);
+    doc.font('Helvetica').fontSize(8).text('• When making a bank transfer or cheque payment, credit the following account.', 40, y + 14, { width: 280 });
+
+    doc.font('Helvetica-Bold').fontSize(10).text('Payment Instructions', 350, y);
+    doc.font('Helvetica').fontSize(9)
+        .text('Sampath Bank', 350, y + 14)
+        .text('Kadawatha Branch', 350, y + 26)
+        .text('0060 1000 9403', 350, y + 38)
+        .text('ONE FINE', 350, y + 50);
+
+    // Signature Area
+    const sigY = y + 100;
+    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(12).text('For, ONE FINE', 0, sigY, { align: 'right', width: doc.page.width - 40 });
+
+    doc.moveTo(doc.page.width - 180, sigY + 60).lineTo(doc.page.width - 40, sigY + 60).strokeColor('#000').stroke();
+    doc.font('Helvetica').fontSize(8).text('AUTHORIZED SIGNATURE', doc.page.width - 180, sigY + 65, { width: 140, align: 'center' });
 }
 
 // GET /api/pdf/quotation/:id
@@ -122,15 +166,18 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="Quotation-${quotation.qNumber}.pdf"`);
         doc.pipe(res);
 
-        buildHeader(doc, 'QUOTATION', quotation.qNumber,
-            new Date(quotation.createdAt).toLocaleDateString('en-GB'));
-        buildCustomerBox(doc, quotation.customer);
+        const dateStr = new Date(quotation.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        buildHeader(doc, 'QUOTATION', quotation.qNumber, dateStr);
+        buildCustomerBox(doc, quotation.customer, quotation.qNumber, dateStr, 'Quotation');
+
         if (quotation.validUntil) {
             doc.fillColor('#888').fontSize(8)
                 .text(`Valid until: ${new Date(quotation.validUntil).toLocaleDateString('en-GB')}`, { align: 'right' });
         }
+
         buildItemsTable(doc, quotation.items);
         buildTotalsBox(doc, quotation);
+
         if (quotation.notes) {
             doc.moveDown().fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(quotation.notes);
@@ -152,41 +199,12 @@ router.get('/invoice/:id', requireAdminAuth, async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoiceNumber}.pdf"`);
         doc.pipe(res);
 
-        buildHeader(doc, 'INVOICE', invoice.invoiceNumber,
-            new Date(invoice.createdAt).toLocaleDateString('en-GB'));
-        buildCustomerBox(doc, invoice.customer);
+        const dateStr = new Date(invoice.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        buildHeader(doc, 'INVOICE', invoice.invoiceNumber, dateStr);
+        buildCustomerBox(doc, invoice.customer, invoice.invoiceNumber, dateStr, 'Invoice');
+
         buildItemsTable(doc, invoice.items);
         buildTotalsBox(doc, invoice);
-
-        // Payment history
-        if (payments.length > 0) {
-            doc.moveDown().fillColor(NAVY).font('Helvetica-Bold').fontSize(10).text('PAYMENT HISTORY');
-            doc.rect(40, doc.y + 4, doc.page.width - 80, 18).fill(NAVY);
-            const hy = doc.y + 4;
-            doc.fillColor('white').font('Helvetica-Bold').fontSize(8)
-                .text('DATE', 52, hy + 5).text('METHOD', 160, hy + 5)
-                .text('REFERENCE', 260, hy + 5).text('AMOUNT', 430, hy + 5);
-            let py = hy + 18;
-            payments.forEach((p, i) => {
-                const bg = i % 2 === 0 ? 'white' : '#F5F7FA';
-                doc.rect(40, py, doc.page.width - 80, 18).fill(bg);
-                doc.fillColor('#333').font('Helvetica').fontSize(8)
-                    .text(new Date(p.date).toLocaleDateString('en-GB'), 52, py + 5)
-                    .text(p.method, 160, py + 5)
-                    .text(p.reference || '—', 260, py + 5)
-                    .text(formatLKR(p.amount), 430, py + 5);
-                py += 18;
-            });
-            doc.y = py + 10;
-
-            // Balance due
-            const balanceBg = invoice.paymentStatus === 'PAID' ? '#22c55e' : '#ef4444';
-            doc.rect(doc.page.width - 220, doc.y, 180, 26).fill(balanceBg);
-            doc.fillColor('white').font('Helvetica-Bold').fontSize(10)
-                .text(invoice.paymentStatus === 'PAID' ? 'PAID IN FULL' : `BALANCE DUE: ${formatLKR(invoice.balanceDue)}`,
-                    doc.page.width - 220, doc.y + 7, { width: 180, align: 'center' });
-            doc.moveDown(3);
-        }
 
         if (invoice.notes) {
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
