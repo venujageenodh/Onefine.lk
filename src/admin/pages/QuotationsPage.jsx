@@ -2,10 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { apiFetch, formatLKR, formatDate, StatusBadge, apiUrl } from '../utils';
 import { useAdminAuth } from '../AdminAuthContext';
 
-function QuotationForm({ onSave, token }) {
-    const [customer, setCustomer] = useState({ name: '', phone: '', email: '', address: '', company: '' });
-    const [items, setItems] = useState([{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
-    const [extra, setExtra] = useState({ discountAmount: 0, deliveryCharge: 0, tax: 0, notes: '', validUntil: '' });
+function QuotationForm({ onSave, token, initialData = null }) {
+    const [customer, setCustomer] = useState(initialData?.customer || { name: '', phone: '', email: '', address: '', company: '' });
+    const [items, setItems] = useState(initialData?.items || [{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
+    const [extra, setExtra] = useState({
+        discountAmount: initialData?.discountAmount || 0,
+        deliveryCharge: initialData?.deliveryCharge || 0,
+        tax: initialData?.tax || 0,
+        notes: initialData?.notes || '',
+        validUntil: initialData?.validUntil ? new Date(initialData.validUntil).toISOString().split('T')[0] : ''
+    });
     const [saving, setSaving] = useState(false);
 
     const addItem = () => setItems(i => [...i, { name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
@@ -18,8 +24,11 @@ function QuotationForm({ onSave, token }) {
     const submit = async (e) => {
         e.preventDefault(); setSaving(true);
         try {
-            await apiFetch('/quotations', {
-                method: 'POST', body: JSON.stringify({
+            const path = initialData ? `/quotations/${initialData._id}` : '/quotations';
+            const method = initialData ? 'PUT' : 'POST';
+
+            await apiFetch(path, {
+                method, body: JSON.stringify({
                     customer, items: items.map(i => ({ ...i, qty: Number(i.qty), unitPrice: Number(i.unitPrice), discount: Number(i.discount) })),
                     ...extra, discountAmount: Number(extra.discountAmount), deliveryCharge: Number(extra.deliveryCharge), tax: Number(extra.tax),
                 })
@@ -154,7 +163,7 @@ function QuotationForm({ onSave, token }) {
 
             <button type="submit" disabled={saving}
                 className="w-full rounded-xl bg-gradient-to-r from-[#C9A84C] to-yellow-600 hover:from-[#b59540] hover:to-yellow-700 py-3.5 text-sm font-bold text-white uppercase tracking-widest shadow-lg shadow-[#C9A84C]/20 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
-                {saving ? 'Creating Quotation…' : 'Finalize & Create Quotation'}
+                {saving ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Quotation' : 'Finalize & Create Quotation')}
             </button>
         </form>
     );
@@ -165,7 +174,8 @@ export default function QuotationsPage() {
     const [quotations, setQuotations] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState('list'); // list | new
+    const [view, setView] = useState('list'); // list | new | edit
+    const [editingQuotation, setEditingQuotation] = useState(null);
 
     const fetchQuotations = useCallback(async () => {
         setLoading(true);
@@ -190,14 +200,18 @@ export default function QuotationsPage() {
         window.open(apiUrl(`/pdf/quotation/${id}?token=${token}`), '_blank');
     };
 
-    if (view === 'new') return (
+    if (view === 'new' || view === 'edit') return (
         <div className="max-w-2xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
-                <button onClick={() => setView('list')} className="text-slate-400 hover:text-[#1B2A4A]">← Back</button>
-                <h2 className="font-bold text-[#1B2A4A] text-lg">New Quotation</h2>
+                <button onClick={() => { setView('list'); setEditingQuotation(null); }} className="text-slate-400 hover:text-[#1B2A4A]">← Back</button>
+                <h2 className="font-bold text-[#1B2A4A] text-lg">{view === 'edit' ? 'Edit Quotation' : 'New Quotation'}</h2>
             </div>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                <QuotationForm token={token} onSave={() => { setView('list'); fetchQuotations(); }} />
+                <QuotationForm
+                    token={token}
+                    initialData={editingQuotation}
+                    onSave={() => { setView('list'); setEditingQuotation(null); fetchQuotations(); }}
+                />
             </div>
         </div>
     );
@@ -240,6 +254,10 @@ export default function QuotationsPage() {
                                             <button onClick={() => downloadPdf(q._id)}
                                                 className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:border-[#C9A84C]">
                                                 PDF
+                                            </button>
+                                            <button onClick={() => { setEditingQuotation(q); setView('edit'); }}
+                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-blue-500 hover:bg-blue-50">
+                                                Edit
                                             </button>
                                             {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
                                                 <button onClick={() => convertToInvoice(q._id)}

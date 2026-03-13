@@ -27,11 +27,19 @@ const ROLE_PERMISSIONS = {
 
 // Verify JWT and attach admin to request
 async function requireAdminAuth(req, res, next) {
+    let token;
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7);
+    } else if (req.query.token) {
+        // Support token in query string for PDF downloads (window.open)
+        token = req.query.token;
+    }
+
+    if (!token) {
         return res.status(401).json({ error: 'No token provided' });
     }
-    const token = authHeader.slice(7);
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         // Support both legacy single-admin token (password-only) and new multi-admin token
