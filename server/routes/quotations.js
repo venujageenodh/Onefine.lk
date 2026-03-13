@@ -43,8 +43,8 @@ router.post('/', requireAdminAuth, requirePermission('quotations.create'), async
             subtotal, discountAmount: Number(discountAmount),
             deliveryCharge: Number(deliveryCharge),
             tax: Number(tax), taxAmount, total,
-            notes, validUntil,
-            createdBy: req.admin._id,
+            notes, validUntil: validUntil || undefined,
+            createdBy: req.admin._id || null,
         });
         res.status(201).json(quotation);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -63,7 +63,7 @@ router.get('/:id', requireAdminAuth, requirePermission('quotations.view'), async
 router.put('/:id', requireAdminAuth, requirePermission('quotations.edit'), async (req, res) => {
     try {
         const { customer, items, discountAmount = 0, deliveryCharge = 0, tax = 0, notes, validUntil, status } = req.body;
-        const updates = { customer, items, discountAmount, deliveryCharge, tax, notes, validUntil, status };
+        const updates = { customer, items, discountAmount, deliveryCharge, tax, notes, validUntil: validUntil || undefined, status };
         if (items) {
             const c = calcTotals(items, discountAmount, deliveryCharge, tax);
             Object.assign(updates, c);
@@ -92,7 +92,7 @@ router.post('/:id/convert', requireAdminAuth, requirePermission('quotations.edit
             total: quotation.total,
             dueDate: req.body.dueDate,
             notes: quotation.notes,
-            createdBy: req.admin._id,
+            createdBy: req.admin._id || null,
         });
 
         quotation.status = 'CONVERTED';
