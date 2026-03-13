@@ -133,19 +133,21 @@ function buildTotalsBox(doc, data, balanceOnly = false) {
     doc.y = y + 40;
 }
 
-function buildFooter(doc) {
+function buildFooter(doc, showPayment = true) {
     const y = doc.y > doc.page.height - 200 ? doc.y : doc.page.height - 220;
 
     // Bottom Left: Terms and Instructions
     doc.fillColor('#000').font('Helvetica-Bold').fontSize(10).text('Terms & Conditions:', 40, y);
     doc.font('Helvetica').fontSize(8).text('• When making a bank transfer or cheque payment, credit the following account.', 40, y + 14, { width: 280 });
 
-    doc.font('Helvetica-Bold').fontSize(10).text('Payment Instructions', 350, y);
-    doc.font('Helvetica').fontSize(9)
-        .text('Sampath Bank', 350, y + 14)
-        .text('Kadawatha Branch', 350, y + 26)
-        .text('0060 1000 9403', 350, y + 38)
-        .text('ONE FINE', 350, y + 50);
+    if (showPayment) {
+        doc.font('Helvetica-Bold').fontSize(10).text('Payment Instructions', 350, y);
+        doc.font('Helvetica').fontSize(9)
+            .text('Sampath Bank', 350, y + 14)
+            .text('Kadawatha Branch', 350, y + 26)
+            .text('0060 1000 9403', 350, y + 38)
+            .text('ONE FINE', 350, y + 50);
+    }
 
     // Signature Area
     const sigY = y + 100;
@@ -182,7 +184,7 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
             doc.moveDown().fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(quotation.notes);
         }
-        buildFooter(doc);
+        buildFooter(doc, false);
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -210,7 +212,7 @@ router.get('/invoice/:id', requireAdminAuth, async (req, res) => {
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(invoice.notes);
         }
-        buildFooter(doc);
+        buildFooter(doc, true);
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
