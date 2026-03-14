@@ -22,6 +22,7 @@ const ROLE_PERMISSIONS = {
     ACCOUNT_ADMIN: [
         'invoices.view', 'invoices.edit',
         'payments.view', 'payments.create',
+        'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete',
         'dashboard.view', 'proforma.view', 'delivery.view',
     ],
 };

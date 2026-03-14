@@ -35,6 +35,7 @@ const invoicesRouter = require('./routes/invoices');
 const paymentsRouter = require('./routes/payments');
 const dashboardRoutes = require('./routes/dashboard');
 const pdfRoutes = require('./routes/pdf');
+const expensesRouter = require('./routes/expenses');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -441,6 +442,7 @@ app.use('/api/invoices', invoicesRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pdf', pdfRoutes);
+app.use('/api/expenses', expensesRouter);
 
 // ── LEGACY Order Routes (kept for website checkout compat) ─────────────────────
 // GET /api/orders  (admin protected)
