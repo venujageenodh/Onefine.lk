@@ -23,7 +23,7 @@ const NAV = [
     { key: 'proforma', label: 'Proforma Invoices', icon: '📄', perm: 'proforma.view' },
     { key: 'delivery-notes', label: 'Delivery Notes', icon: '🚚', perm: 'delivery.view' },
     { key: 'products', label: 'Products', icon: '🏷️', perm: 'products.view' },
-    { key: 'suppliers', label: 'Suppliers', icon: '🚚', perm: 'suppliers.view' },
+    { key: 'suppliers', label: 'Suppliers', icon: '🏢', perm: 'suppliers.view' },
     { key: 'expenses', label: 'Expenses', icon: '💸', perm: 'expenses.view' },
     { key: 'admins', label: 'Admin Users', icon: '👥', perm: '__owner__' },
 ];
