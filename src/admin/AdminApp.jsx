@@ -9,6 +9,8 @@ import InvoicesPage from './pages/InvoicesPage';
 import SuppliersPage from './pages/SuppliersPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import ProductsAdminPage from './pages/ProductsAdminPage';
+import ProformaInvoicesPage from './pages/ProformaInvoicesPage';
+import DeliveryNotesPage from './pages/DeliveryNotesPage';
 import logo from '../assets/onefine-logo.png';
 
 const NAV = [
@@ -17,6 +19,8 @@ const NAV = [
     { key: 'quotations', label: 'Quotations', icon: '📋', perm: 'quotations.view' },
     { key: 'invoices', label: 'Invoices', icon: '🧾', perm: 'invoices.view' },
     { key: 'inventory', label: 'Inventory', icon: '🗃️', perm: 'inventory.view' },
+    { key: 'proforma', label: 'Proforma Invoices', icon: '📄', perm: 'proforma.view' },
+    { key: 'delivery-notes', label: 'Delivery Notes', icon: '🚚', perm: 'delivery.view' },
     { key: 'products', label: 'Products', icon: '🏷️', perm: 'products.view' },
     { key: 'suppliers', label: 'Suppliers', icon: '🚚', perm: 'suppliers.view' },
     { key: 'admins', label: 'Admin Users', icon: '👥', perm: '__owner__' },
@@ -31,6 +35,8 @@ const PAGES = {
     suppliers: SuppliersPage,
     admins: AdminUsersPage,
     products: ProductsAdminPage,
+    proforma: ProformaInvoicesPage,
+    'delivery-notes': DeliveryNotesPage,
 };
 
 export default function AdminApp() {

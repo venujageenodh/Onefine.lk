@@ -42,6 +42,8 @@ export default function OrdersPage() {
         finally { setUpdating(false); }
     };
 
+    const downloadPdf = (type, id) => window.open(apiUrl(`/pdf/${type}/${id}?token=${token}`), '_blank');
+
     return (
         <div className="space-y-4">
             {/* Filters */}
@@ -91,10 +93,16 @@ export default function OrdersPage() {
                                     <td className="px-4 py-3"><StatusBadge status={o.orderStatus || o.status || 'NEW'} /></td>
                                     <td className="px-4 py-3 text-xs text-slate-400">{formatDateTime(o.createdAt)}</td>
                                     <td className="px-4 py-3">
-                                        <button onClick={() => { setSelected(o); setNewStatus(o.orderStatus || 'NEW'); }}
-                                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-[#1B2A4A] hover:text-[#1B2A4A]">
-                                            Manage
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setSelected(o); setNewStatus(o.orderStatus || 'NEW'); }}
+                                                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-[#1B2A4A] hover:text-[#1B2A4A]">
+                                                Manage
+                                            </button>
+                                            <button onClick={() => downloadPdf('proforma', o._id)} title="Proforma Invoice"
+                                                className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-bold text-slate-600 hover:border-[#1B2A4A]">
+                                                Proforma
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -153,18 +161,30 @@ export default function OrdersPage() {
                             )}
 
                             {/* Update status */}
-                            <div className="space-y-2">
-                                <p className="font-semibold text-xs text-slate-500 uppercase">Update Status</p>
-                                <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C]">
-                                    {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-                                </select>
-                                <input placeholder="Add a note (optional)" value={statusNote} onChange={e => setStatusNote(e.target.value)}
-                                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C]" />
-                                <button onClick={updateStatus} disabled={updating}
-                                    className="w-full rounded-full bg-[#C9A84C] py-2.5 text-sm font-bold text-[#1B2A4A] disabled:opacity-60">
-                                    {updating ? 'Saving…' : 'Save Status'}
-                                </button>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <p className="font-semibold text-xs text-slate-500 uppercase">Update Status</p>
+                                    <select value={newStatus} onChange={e => setNewStatus(e.target.value)}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C]">
+                                        {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                                    </select>
+                                    <input placeholder="Add a note (optional)" value={statusNote} onChange={e => setStatusNote(e.target.value)}
+                                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C]" />
+                                    <button onClick={updateStatus} disabled={updating}
+                                        className="w-full rounded-full bg-[#C9A84C] py-2.5 text-sm font-bold text-[#1B2A4A] disabled:opacity-60">
+                                        {updating ? 'Saving…' : 'Save Status'}
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+                                    <button onClick={() => downloadPdf('proforma', selected._id)}
+                                        className="rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                                        📄 Proforma Invoice
+                                    </button>
+                                    <button onClick={() => downloadPdf('delivery', selected._id)}
+                                        className="rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                                        🚚 Delivery Note
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

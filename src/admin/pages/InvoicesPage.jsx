@@ -244,8 +244,12 @@ export default function InvoicesPage() {
                                                 className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:border-[#C9A84C]">
                                                 Payment
                                             </button>
+                                            <button onClick={() => window.open(apiUrl(`/pdf/delivery/${inv.orderId || inv._id}?token=${token}`), '_blank')}
+                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:text-slate-800" title="Delivery Note">
+                                                Delivery
+                                            </button>
                                             <button onClick={() => downloadPdf(inv._id)}
-                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:text-[#1B2A4A]" title="Invoice PDF">
                                                 PDF
                                             </button>
                                         </div>
@@ -290,11 +294,15 @@ export default function InvoicesPage() {
                                 <div>
                                     <p className="text-xs font-bold text-slate-500 uppercase mb-2">Payment History</p>
                                     {detail.payments.map((p, i) => (
-                                        <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 text-xs">
-                                            <span className="text-slate-500">{formatDate(p.date)}</span>
-                                            <span className="font-semibold text-slate-600">{p.method}</span>
-                                            <span className="text-slate-400">{p.reference || '—'}</span>
-                                            <span className="font-bold text-green-600">{formatLKR(p.amount)}</span>
+                                        <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 text-xs gap-3">
+                                            <span className="text-slate-500 whitespace-nowrap">{formatDate(p.date)}</span>
+                                            <span className="font-semibold text-slate-600 w-16">{p.method}</span>
+                                            <span className="text-slate-400 flex-1 truncate">{p.reference || '—'}</span>
+                                            <span className="font-bold text-green-600 whitespace-nowrap">{formatLKR(p.amount)}</span>
+                                            <button onClick={() => window.open(apiUrl(`/pdf/receipt/${p._id}?token=${token}`), '_blank')}
+                                                className="text-[#1B2A4A] hover:text-[#C9A84C] px-2 py-1 rounded bg-slate-50 border border-slate-200 ml-2" title="Download Receipt">
+                                                📄
+                                            </button>
                                         </div>
                                     ))}
                                 </div>

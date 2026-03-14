@@ -29,9 +29,10 @@ const Supplier = require('./models/Supplier');
 const authRoutes = require('./routes/auth');
 const inventoryRoutes = require('./routes/inventory');
 const ordersRoutes = require('./routes/orders');
-const suppliersRoutes = require('./routes/suppliers');
+const suppliersRouter = require('./routes/suppliers');
 const quotationsRoutes = require('./routes/quotations');
-const invoicesRoutes = require('./routes/invoices');
+const invoicesRouter = require('./routes/invoices');
+const paymentsRouter = require('./routes/payments');
 const dashboardRoutes = require('./routes/dashboard');
 const pdfRoutes = require('./routes/pdf');
 
@@ -434,9 +435,10 @@ app.post('/api/orders', async (req, res) => {
 app.use('/api/auth', authRoutes);          // multi-admin login + legacy /api/auth/login
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/biz/orders', ordersRoutes);  // new orders (different path to avoid conflict)
-app.use('/api/suppliers', suppliersRoutes);
+app.use('/api/suppliers', suppliersRouter);
 app.use('/api/quotations', quotationsRoutes);
-app.use('/api/invoices', invoicesRoutes);
+app.use('/api/invoices', invoicesRouter);
+app.use('/api/payments', paymentsRouter);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pdf', pdfRoutes);
 

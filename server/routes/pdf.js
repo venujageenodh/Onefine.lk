@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const Quotation = require('../models/Quotation');
 const Invoice = require('../models/Invoice');
 const Payment = require('../models/Payment');
+const Order = require('../models/Order');
 const { requireAdminAuth } = require('../middleware/auth');
 
 const GOLD = '#000000'; // Using solid black for text
@@ -76,7 +77,7 @@ function buildItemsTable(doc, items) {
     rowY += 10;
 
     items.forEach((item, i) => {
-        const lineTotal = item.unitPrice * item.qty;
+        const lineTotal = (item.unitPrice || 0) * (item.qty || 0);
         const lineDiscount = lineTotal * (item.discount || 0) / 100;
         const net = lineTotal - lineDiscount;
 
@@ -84,19 +85,59 @@ function buildItemsTable(doc, items) {
             .text(i + 1, cols.hash + 5, rowY)
             .font('Helvetica-Bold').text(item.name, cols.desc, rowY, { width: 230 });
 
-        if (item.description) {
-            doc.font('Helvetica').fontSize(8).fillColor('#666').text(item.description, cols.desc, doc.y + 2, { width: 230 });
+        if (item.description || item.customization) {
+            doc.font('Helvetica').fontSize(8).fillColor('#666').text(item.description || item.customization, cols.desc, doc.y + 2, { width: 230 });
         }
 
         const currentY = doc.y;
+        
         doc.fillColor('#000').font('Helvetica').fontSize(10)
-            .text(item.qty, cols.qty, rowY, { width: 40, align: 'center' })
-            .text(formatLKR(item.unitPrice), cols.price, rowY, { width: 90, align: 'right' })
-            .text(formatLKR(net), cols.total, rowY, { width: 90, align: 'right' });
+            .text(item.qty || 1, cols.qty, rowY, { width: 40, align: 'center' });
+            
+        if (item.unitPrice !== undefined && !item.hidePrice) {
+            doc.text(formatLKR(item.unitPrice), cols.price, rowY, { width: 90, align: 'right' })
+               .text(formatLKR(net), cols.total, rowY, { width: 90, align: 'right' });
+        }
 
         rowY = Math.max(currentY, rowY + 20) + 10;
 
         // Horizontal line between items if needed, or just padding
+        doc.moveTo(40, rowY - 5).lineTo(doc.page.width - 40, rowY - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
+    });
+
+    doc.y = rowY;
+}
+
+function buildDeliveryItemsTable(doc, items) {
+    const cols = { hash: 40, desc: 65, qty: 450 };
+    const y = doc.y;
+
+    // Table Header
+    doc.rect(40, y, doc.page.width - 80, 22).fill('#F1F5F9');
+    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(9)
+        .text('#', cols.hash + 5, y + 7)
+        .text('DESCRIPTION', cols.desc, y + 7)
+        .text('QTY', cols.qty, y + 7, { width: 60, align: 'center' });
+
+    let rowY = y + 22;
+    doc.moveTo(40, rowY).lineTo(doc.page.width - 40, rowY).strokeColor('#1B2A4A').lineWidth(1).stroke();
+    rowY += 10;
+
+    items.forEach((item, i) => {
+        doc.fillColor('#000').font('Helvetica').fontSize(10)
+            .text(i + 1, cols.hash + 5, rowY)
+            .font('Helvetica-Bold').text(item.name, cols.desc, rowY, { width: 350 });
+
+        if (item.description || item.customization) {
+            doc.font('Helvetica').fontSize(8).fillColor('#666').text(item.description || item.customization, cols.desc, doc.y + 2, { width: 350 });
+        }
+
+        const currentY = doc.y;
+        doc.fillColor('#000').font('Helvetica').fontSize(10)
+            .text(item.qty || 1, cols.qty, rowY, { width: 60, align: 'center' });
+
+        rowY = Math.max(currentY, rowY + 20) + 10;
+
         doc.moveTo(40, rowY - 5).lineTo(doc.page.width - 40, rowY - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
     });
 
@@ -189,30 +230,138 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// GET /api/pdf/invoice/:id
-router.get('/invoice/:id', requireAdminAuth, async (req, res) => {
+// GET /api/pdf/proforma/:id
+router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
     try {
-        const invoice = await Invoice.findById(req.params.id);
-        if (!invoice) return res.status(404).json({ error: 'Not found' });
-        const payments = await Payment.find({ invoiceId: invoice._id }).sort({ date: 1 });
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Not found' });
 
         const doc = new PDFDocument({ margin: 40, size: 'A4' });
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoiceNumber}.pdf"`);
+        res.setHeader('Content-Disposition', `attachment; filename="Proforma-${order.orderNumber}.pdf"`);
         doc.pipe(res);
 
-        const dateStr = new Date(invoice.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
-        buildHeader(doc, 'INVOICE', invoice.invoiceNumber, dateStr);
-        buildCustomerBox(doc, invoice.customer, invoice.invoiceNumber, dateStr, 'Invoice');
+        const dateStr = new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        buildHeader(doc, 'PROFORMA INVOICE', order.orderNumber, dateStr);
+        buildCustomerBox(doc, order.customer, order.orderNumber, dateStr, 'Order');
 
-        buildItemsTable(doc, invoice.items);
-        buildTotalsBox(doc, invoice);
+        buildItemsTable(doc, order.items);
+        buildTotalsBox(doc, order);
 
-        if (invoice.notes) {
+        if (order.notes) {
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
-                .font('Helvetica').text(invoice.notes);
+                .font('Helvetica').text(order.notes);
         }
         buildFooter(doc, true);
+        doc.end();
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/pdf/delivery/:id
+router.get('/delivery/:id', requireAdminAuth, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Not found' });
+
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="DeliveryNote-${order.orderNumber}.pdf"`);
+        doc.pipe(res);
+
+        const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+        buildHeader(doc, 'DELIVERY NOTE', order.orderNumber, dateStr);
+        buildCustomerBox(doc, order.customer, order.orderNumber, dateStr, 'Order');
+
+        buildDeliveryItemsTable(doc, order.items);
+
+        if (order.notes) {
+            doc.y += 20;
+            doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
+                .font('Helvetica').text(order.notes);
+        }
+        
+        // Delivery Signature Area
+        const y = doc.y > doc.page.height - 150 ? doc.y : doc.page.height - 150;
+        doc.moveTo(40, y).lineTo(200, y).strokeColor('#000').stroke();
+        doc.moveTo(doc.page.width - 200, y).lineTo(doc.page.width - 40, y).strokeColor('#000').stroke();
+        
+        doc.font('Helvetica').fontSize(8)
+            .text('RECEIVED BY (SIGNATURE)', 40, y + 5, { width: 160, align: 'center' })
+            .text('DATE', doc.page.width - 200, y + 5, { width: 160, align: 'center' });
+
+        doc.end();
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/pdf/receipt/:id
+router.get('/receipt/:id', requireAdminAuth, async (req, res) => {
+    try {
+        const payment = await Payment.findById(req.params.id).populate('invoiceId').populate('orderId');
+        if (!payment) return res.status(404).json({ error: 'Payment not found' });
+
+        const doc = new PDFDocument({ margin: 40, size: 'A5' }); // Use A5 for receipts
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Receipt-${payment._id.toString().slice(-6)}.pdf"`);
+        doc.pipe(res);
+
+        const dateStr = new Date(payment.date || payment.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        
+        // Top Left: Company Info
+        doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(16).text('One Fine', 40, 40);
+        doc.fillColor('#333').font('Helvetica').fontSize(8)
+            .text('Imbulgoda, Sri Lanka', 40, 60)
+            .text('📞 +94 70 345 1261', 40, 72);
+
+        // Top Right: Title
+        doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(18).text('RECEIPT', 40, 40, { align: 'right', width: doc.page.width - 80 });
+        
+        doc.moveTo(40, 95).lineTo(doc.page.width - 40, 95).strokeColor('#DDD').stroke();
+
+        doc.y = 110;
+        
+        let relatedDoc = payment.invoiceId || payment.orderId;
+        let relatedDocType = payment.invoiceId ? 'Invoice' : (payment.orderId ? 'Order' : '');
+        let relatedNum = relatedDoc ? (relatedDoc.invoiceNumber || relatedDoc.orderNumber) : '';
+        let customer = relatedDoc ? relatedDoc.customer : null;
+
+        if (customer) {
+            doc.fillColor('#333').font('Helvetica-Bold').fontSize(10).text('RECEIVED FROM', 40, doc.y);
+            doc.fillColor('#000').font('Helvetica').fontSize(11).text(customer.name.toUpperCase(), 40, doc.y + 4);
+            doc.y += 15;
+        }
+
+        doc.rect(40, doc.y, doc.page.width - 80, 120).fill('#F8F9FA').stroke('#EEE');
+        
+        const contentY = doc.y + 15;
+        doc.fillColor('#555').font('Helvetica-Bold').fontSize(9)
+            .text('Receipt Date:', 60, contentY)
+            .text('Payment Method:', 60, contentY + 20)
+            .text('Reference:', 60, contentY + 40);
+            
+        if (relatedNum) {
+            doc.text(`For ${relatedDocType}:`, 60, contentY + 60);
+        }
+
+        doc.fillColor('#000').font('Helvetica').fontSize(10)
+            .text(dateStr, 150, contentY)
+            .text(payment.method, 150, contentY + 20)
+            .text(payment.reference || '-', 150, contentY + 40);
+            
+        if (relatedNum) {
+            doc.text(relatedNum, 150, contentY + 60);
+        }
+
+        // Amount Box
+        doc.rect(40, contentY + 90, doc.page.width - 80, 40).fill('#1B2A4A');
+        doc.fillColor('#FFF').font('Helvetica-Bold').fontSize(10).text('AMOUNT RECEIVED', 60, contentY + 105);
+        doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(16).text(formatLKR(payment.amount), 60, contentY + 100, { align: 'right', width: doc.page.width - 140 });
+
+        // Footer
+        const sigY = doc.page.height - 80;
+        doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(10).text('For, ONE FINE', 0, sigY, { align: 'right', width: doc.page.width - 40 });
+        doc.moveTo(doc.page.width - 160, sigY + 35).lineTo(doc.page.width - 40, sigY + 35).strokeColor('#000').stroke();
+        doc.font('Helvetica').fontSize(7).text('AUTHORIZED SIGNATURE', doc.page.width - 160, sigY + 40, { width: 120, align: 'center' });
+
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
 });

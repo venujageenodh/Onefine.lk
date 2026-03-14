@@ -29,6 +29,7 @@ export default function DashboardPage() {
     const [stats, setStats] = useState(null);
     const [recent, setRecent] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
 
     useEffect(() => {
         Promise.all([
@@ -41,57 +42,87 @@ export default function DashboardPage() {
     if (loading) return <div className="py-20 text-center text-slate-400">Loading dashboard…</div>;
 
     return (
-        <div className="space-y-8">
-            {/* Stats grid */}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard icon="📦" label="Orders Today" value={stats?.orders?.today ?? 0}
-                    sub={`${stats?.orders?.thisWeek ?? 0} this week`} color="blue" />
-                <StatCard icon="💰" label="Revenue Today" value={formatLKR(stats?.revenue?.today ?? 0)}
-                    sub={`${formatLKR(stats?.revenue?.thisWeek)} this week`} color="green" />
-                <StatCard icon="🚚" label="Pending Delivery" value={stats?.orders?.pending ?? 0}
-                    sub={`${stats?.orders?.new ?? 0} new orders`} color="purple" />
-                <StatCard icon="⚠️" label="Low Stock Items" value={stats?.inventory?.lowStockItems ?? 0}
-                    sub="Need restocking" color="red" />
+        <div className="space-y-6">
+            {/* Tabs Navigation */}
+            <div className="flex space-x-8 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`pb-3 text-sm font-bold tracking-wider uppercase transition-colors relative ${activeTab === 'overview' ? 'text-[#1B2A4A]' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    Overview
+                    {activeTab === 'overview' && (
+                        <span className="absolute bottom-0 left-0 right-0 border-b-2 border-[#C9A84C]" />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('orders')}
+                    className={`pb-3 text-sm font-bold tracking-wider uppercase transition-colors relative ${activeTab === 'orders' ? 'text-[#1B2A4A]' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                    Recent Orders
+                    {activeTab === 'orders' && (
+                        <span className="absolute bottom-0 left-0 right-0 border-b-2 border-[#C9A84C]" />
+                    )}
+                </button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-                <StatCard icon="🧾" label="Unpaid Invoices" value={stats?.payments?.unpaidInvoices ?? 0} color="red" />
-                <StatCard icon="💳" label="Part Paid" value={stats?.payments?.partPaidInvoices ?? 0} color="gold" />
-                <StatCard icon="✅" label="Completed Orders" value={stats?.orders?.completed ?? 0} color="green" />
-            </div>
+            {activeTab === 'overview' && (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                    {/* Stats grid */}
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <StatCard icon="📦" label="Orders Today" value={stats?.orders?.today ?? 0}
+                            sub={`${stats?.orders?.thisWeek ?? 0} this week`} color="blue" />
+                        <StatCard icon="💰" label="Revenue Today" value={formatLKR(stats?.revenue?.today ?? 0)}
+                            sub={`${formatLKR(stats?.revenue?.thisWeek)} this week`} color="green" />
+                        <StatCard icon="🚚" label="Pending Delivery" value={stats?.orders?.pending ?? 0}
+                            sub={`${stats?.orders?.new ?? 0} new orders`} color="purple" />
+                        <StatCard icon="⚠️" label="Low Stock Items" value={stats?.inventory?.lowStockItems ?? 0}
+                            sub="Need restocking" color="red" />
+                    </div>
 
-            {/* Recent orders */}
-            <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="font-bold text-[#1B2A4A]">Recent Orders</h2>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <StatCard icon="🧾" label="Unpaid Invoices" value={stats?.payments?.unpaidInvoices ?? 0} color="red" />
+                        <StatCard icon="💳" label="Part Paid" value={stats?.payments?.partPaidInvoices ?? 0} color="gold" />
+                        <StatCard icon="✅" label="Completed Orders" value={stats?.orders?.completed ?? 0} color="green" />
+                    </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
-                            <tr>
-                                {['Order #', 'Customer', 'Total', 'Payment', 'Status', 'Date'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-left font-semibold">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {recent.map(o => (
-                                <tr key={o._id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-4 py-3 font-mono text-[11px] text-[#1B2A4A] font-bold">{o.orderNumber || o._id?.slice(-6)}</td>
-                                    <td className="px-4 py-3 font-medium text-[#1B2A4A]">{o.customer?.name || '—'}</td>
-                                    <td className="px-4 py-3 font-semibold">{formatLKR(o.total)}</td>
-                                    <td className="px-4 py-3"><StatusBadge status={o.paymentStatus} /></td>
-                                    <td className="px-4 py-3"><StatusBadge status={o.orderStatus} /></td>
-                                    <td className="px-4 py-3 text-slate-400 text-xs">{formatDateTime(o.createdAt)}</td>
-                                </tr>
-                            ))}
-                            {!recent.length && (
-                                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">No orders yet</td></tr>
-                            )}
-                        </tbody>
-                    </table>
+            )}
+
+            {activeTab === 'orders' && (
+                <div className="animate-in fade-in duration-300">
+                    {/* Recent orders */}
+                    <div className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h2 className="font-bold text-[#1B2A4A]">Recent Orders</h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wider">
+                                    <tr>
+                                        {['Order #', 'Customer', 'Total', 'Payment', 'Status', 'Date'].map(h => (
+                                            <th key={h} className="px-4 py-3 text-left font-semibold">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {recent.map(o => (
+                                        <tr key={o._id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-4 py-3 font-mono text-[11px] text-[#1B2A4A] font-bold">{o.orderNumber || o._id?.slice(-6)}</td>
+                                            <td className="px-4 py-3 font-medium text-[#1B2A4A]">{o.customer?.name || '—'}</td>
+                                            <td className="px-4 py-3 font-semibold">{formatLKR(o.total)}</td>
+                                            <td className="px-4 py-3"><StatusBadge status={o.paymentStatus} /></td>
+                                            <td className="px-4 py-3"><StatusBadge status={o.orderStatus} /></td>
+                                            <td className="px-4 py-3 text-slate-400 text-xs">{formatDateTime(o.createdAt)}</td>
+                                        </tr>
+                                    ))}
+                                    {!recent.length && (
+                                        <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-sm">No orders yet</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
