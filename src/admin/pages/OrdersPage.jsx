@@ -28,14 +28,12 @@ export default function OrdersPage() {
 
     useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-    const updateStatus = async () => {
-        if (!newStatus || !selected) return;
+    const createInvoice = async () => {
+        if (!selected || selected.invoiceId) return;
+        if (!window.confirm('Generate a formal invoice for this order?')) return;
         setUpdating(true);
         try {
-            await apiFetch(`/biz/orders/${selected._id}/status`, {
-                method: 'PUT', body: JSON.stringify({ status: newStatus, note: statusNote }),
-            }, token);
-            setStatusNote(''); setNewStatus('');
+            await apiFetch(`/biz/orders/${selected._id}/create-invoice`, { method: 'POST' }, token);
             fetchOrders();
             setSelected(null);
         } catch (e) { alert(e.message); }
@@ -184,6 +182,11 @@ export default function OrdersPage() {
                                         className="rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
                                         🚚 Delivery Note
                                     </button>
+                                    {!selected.invoiceId && (
+                                        <button onClick={createInvoice} className="col-span-2 rounded-xl bg-blue-500 py-2.5 text-xs font-bold text-white hover:bg-blue-600 transition-colors">
+                                            🧾 Create Formal Invoice
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

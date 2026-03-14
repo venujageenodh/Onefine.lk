@@ -73,8 +73,42 @@ router.put('/:id', requireAdminAuth, requirePermission('quotations.edit'), async
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/quotations/:id/convert — convert quotation to invoice
-router.post('/:id/convert', requireAdminAuth, requirePermission('quotations.edit'), async (req, res) => {
+// POST /api/quotations/:id/convert-to-order — convert quotation to order
+router.post('/:id/convert-to-order', requireAdminAuth, requirePermission('orders.create'), async (req, res) => {
+    try {
+        const quotation = await Quotation.findById(req.params.id);
+        if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
+        if (quotation.status === 'CONVERTED') return res.status(400).json({ error: 'Already converted' });
+
+        const Order = require('../models/Order');
+        const order = await Order.create({
+            quotationId: quotation._id,
+            source: 'ADMIN',
+            orderType: 'BULK', // Assuming quotations are usually bulk
+            customer: quotation.customer,
+            items: quotation.items.map(item => ({
+                productId: item.productId,
+                name: item.name,
+                qty: item.qty,
+                unitPrice: item.unitPrice,
+                customization: item.description || ''
+            })),
+            subtotal: quotation.subtotal,
+            deliveryCharge: quotation.deliveryCharge,
+            total: quotation.total,
+            notes: quotation.notes,
+            timeline: [{ status: 'NEW', note: `Converted from Quotation ${quotation.qNumber}`, at: new Date() }],
+        });
+
+        quotation.status = 'CONVERTED';
+        quotation.convertedToInvoiceId = order._id; // Reusing field for simplicity or should add convertedToOrderId
+        await quotation.save();
+
+        res.status(201).json({ order, quotation });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/quotations/:id/convert — convert quotation to invoice (Legacy, keeping for now)
     try {
         const quotation = await Quotation.findById(req.params.id);
         if (!quotation) return res.status(404).json({ error: 'Quotation not found' });

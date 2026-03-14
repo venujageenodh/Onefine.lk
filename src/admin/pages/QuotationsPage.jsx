@@ -293,10 +293,10 @@ export default function QuotationsPage() {
         localStorage.setItem('quotation_view_mode', next);
     };
 
-    const convertToInvoice = async (id) => {
-        if (!window.confirm('Convert this quotation to an invoice?')) return;
+    const convertToOrder = async (id) => {
+        if (!window.confirm('Convert this quotation to an active order?')) return;
         try {
-            await apiFetch(`/quotations/${id}/convert`, { method: 'POST', body: JSON.stringify({}) }, token);
+            await apiFetch(`/quotations/${id}/convert-to-order`, { method: 'POST', body: JSON.stringify({}) }, token);
             fetchQuotations();
         } catch (e) { alert(e.message); }
     };
@@ -378,9 +378,9 @@ export default function QuotationsPage() {
                                                 Edit
                                             </button>
                                             {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
-                                                <button onClick={() => convertToInvoice(q._id)}
+                                                <button onClick={() => convertToOrder(q._id)}
                                                     className="rounded-full border border-[#C9A84C]/30 px-2.5 py-1 text-[10px] font-bold text-[#C9A84C] hover:bg-[#C9A84C]/10">
-                                                    → Invoice
+                                                    → Confirm Order
                                                 </button>
                                             )}
                                         </div>

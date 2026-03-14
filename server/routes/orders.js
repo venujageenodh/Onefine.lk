@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const Invoice = require('../models/Invoice');
 const { requireAdminAuth, requirePermission } = require('../middleware/auth');
 const { adjustStock } = require('./inventory');
 
@@ -151,6 +152,38 @@ router.post('/payhere-notify', async (req, res) => {
         }
         res.sendStatus(200);
     } catch (err) { res.sendStatus(200); } // Always 200 to PayHere
+});
+
+// POST /api/orders/:id/create-invoice — create invoice from order
+router.post('/:id/create-invoice', requireAdminAuth, requirePermission('invoices.create'), async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        if (order.invoiceId) return res.status(400).json({ error: 'Order already has an invoice' });
+
+        const invoice = await Invoice.create({
+            orderId: order._id,
+            quotationId: order.quotationId,
+            customer: order.customer,
+            items: order.items.map(item => ({
+                productId: item.productId,
+                name: item.name,
+                qty: item.qty,
+                unitPrice: item.unitPrice,
+                discount: 0
+            })),
+            subtotal: order.subtotal,
+            deliveryCharge: order.deliveryCharge,
+            total: order.total,
+            notes: order.notes,
+            createdBy: req.admin._id || null,
+        });
+
+        order.invoiceId = invoice._id;
+        await order.save();
+
+        res.status(201).json(invoice);
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;
