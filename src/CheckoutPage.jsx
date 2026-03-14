@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HiOutlineShoppingBag, HiCheck, HiArrowLeft } from 'react-icons/hi';
 import logo from './assets/onefine-logo.png';
+import { extractNumericPrice, formatLKR } from './utils';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -12,11 +13,7 @@ const PAYHERE_URL = PAYHERE_SANDBOX
     ? 'https://sandbox.payhere.lk/pay/checkout'
     : 'https://www.payhere.lk/pay/checkout';
 
-function extractNumericPrice(priceStr) {
-    if (!priceStr) return 0;
-    const cleaned = String(priceStr).replace(/[^\d.]/g, '');
-    return parseFloat(cleaned) || 0;
-}
+// Price extraction moved to utils.js
 
 const BANK_DETAILS = {
     bank: 'Sampath Bank',
@@ -297,15 +294,15 @@ export default function CheckoutPage() {
                                 <div className="space-y-2 pt-3">
                                     <div className="flex justify-between text-xs text-slate-500">
                                         <span>Subtotal</span>
-                                        <span>Rs. {subtotal.toLocaleString('en-LK')}</span>
+                                        <span>{formatLKR(subtotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-xs text-slate-500">
                                         <span>Delivery</span>
-                                        <span>Rs. {DELIVERY_CHARGE.toLocaleString('en-LK')}</span>
+                                        <span>{formatLKR(DELIVERY_CHARGE)}</span>
                                     </div>
                                     <div className="flex justify-between font-bold text-sm text-navy pt-2 border-t border-slate-100">
                                         <span>Total</span>
-                                        <span>Rs. {orderTotal.toLocaleString('en-LK')}</span>
+                                        <span>{formatLKR(orderTotal)}</span>
                                     </div>
                                 </div>
 
