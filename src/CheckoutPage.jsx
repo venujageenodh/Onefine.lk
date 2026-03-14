@@ -23,6 +23,10 @@ const BANK_DETAILS = {
 };
 
 export default function CheckoutPage() {
+    useEffect(() => {
+        console.log("Checkout Logic Version: 1.2.1 (Robust Match)");
+    }, []);
+
     const params = new URLSearchParams(window.location.search);
     const productName = params.get('productName') || '';
     const productPrice = params.get('productPrice') || '';
@@ -43,6 +47,12 @@ export default function CheckoutPage() {
 
     const subtotal = numericPrice * qty;
     const orderTotal = subtotal + DELIVERY_CHARGE;
+
+    useEffect(() => {
+        if (productPrice) {
+            console.log(`[PriceDebug] Raw="${productPrice}" -> Parsed=${numericPrice} (qty=${qty}) -> Subtotal=${subtotal}`);
+        }
+    }, [productPrice, numericPrice, qty, subtotal]);
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
