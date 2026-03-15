@@ -36,8 +36,8 @@ const orderSchema = new mongoose.Schema({
     adminNotes: { type: String, default: '' },
     orderStatus: {
         type: String,
-        enum: ['NEW', 'CONFIRMED', 'IN_PRODUCTION', 'PACKED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CANCELLED'],
-        default: 'NEW',
+        enum: ['PENDING', 'CONFIRMED', 'PROCESSING', 'PACKED', 'DISPATCHED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'REFUNDED'],
+        default: 'PENDING',
     },
     paymentStatus: { type: String, enum: ['UNPAID', 'PART_PAID', 'PAID'], default: 'UNPAID' },
     paymentMethod: { type: String, enum: ['PAYHERE', 'BANK', 'CASH', 'COD', 'WHATSAPP', ''], default: '' },
@@ -45,6 +45,7 @@ const orderSchema = new mongoose.Schema({
     assignedAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminUser', default: null },
     quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', default: null },
     invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', default: null },
+    deliveryNoteId: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryNote', default: null },
     payhereOrderId: { type: String, default: '' },
     codAllowed: { type: Boolean, default: true },
 }, { timestamps: true });

@@ -32,7 +32,7 @@ const invoiceSchema = new mongoose.Schema({
     balanceDue: { type: Number, default: 0 },
     paymentStatus: {
         type: String,
-        enum: ['UNPAID', 'PART_PAID', 'PAID'],
+        enum: ['UNPAID', 'PARTIALLY_PAID', 'PAID'],
         default: 'UNPAID',
     },
     dueDate: { type: Date },

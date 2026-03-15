@@ -12,12 +12,14 @@ import ProductsAdminPage from './pages/ProductsAdminPage';
 import ProformaInvoicesPage from './pages/ProformaInvoicesPage';
 import DeliveryNotesPage from './pages/DeliveryNotesPage';
 import ExpensesPage from './pages/ExpensesPage';
+import CustomerProfilePage from './pages/CustomerProfilePage';
 import logo from '../assets/onefine-logo.png';
 
 const NAV = [
     { key: 'dashboard', label: 'Dashboard', icon: '📊', perm: 'dashboard.view' },
     { key: 'orders', label: 'Orders', icon: '📦', perm: 'orders.view' },
     { key: 'quotations', label: 'Quotations', icon: '📋', perm: 'quotations.view' },
+    { key: 'customers', label: 'Customers', icon: '👥', perm: 'customers.view' },
     { key: 'invoices', label: 'Invoices', icon: '🧾', perm: 'invoices.view' },
     { key: 'inventory', label: 'Inventory', icon: '🗃️', perm: 'inventory.view' },
     { key: 'proforma', label: 'Proforma Invoices', icon: '📄', perm: 'proforma.view' },
@@ -25,7 +27,7 @@ const NAV = [
     { key: 'products', label: 'Products', icon: '🏷️', perm: 'products.view' },
     { key: 'suppliers', label: 'Suppliers', icon: '🏢', perm: 'suppliers.view' },
     { key: 'expenses', label: 'Expenses', icon: '💸', perm: 'expenses.view' },
-    { key: 'admins', label: 'Admin Users', icon: '👥', perm: '__owner__' },
+    { key: 'admins', label: 'Admin Users', icon: '👤', perm: '__owner__' },
 ];
 
 const PAGES = {
@@ -33,6 +35,7 @@ const PAGES = {
     orders: OrdersPage,
     inventory: InventoryPage,
     quotations: QuotationsPage,
+    customers: CustomerProfilePage,
     invoices: InvoicesPage,
     suppliers: SuppliersPage,
     admins: AdminUsersPage,

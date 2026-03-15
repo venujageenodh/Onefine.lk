@@ -15,6 +15,12 @@ function formatLKR(amount) {
     return `LKR ${Number(amount || 0).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
 }
 
+function cleanText(text) {
+    if (!text) return '';
+    // Strip emojis and non-standard characters that break PDFKit's default fonts
+    return text.toString().replace(/[^\x00-\x7F]/g, '');
+}
+
 function buildHeader(doc, title, number, date) {
     // Top Left: Company Info
     doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(16).text('One Fine', 40, 40);
@@ -23,10 +29,10 @@ function buildHeader(doc, title, number, date) {
         .text('20/9', 40, 72)
         .text('Green Terrance,Parakandeniya', 40, 84)
         .text('Imbulgoda', 40, 96)
-        .text('📞 +94 70 345 1261  ✉ venujageenodh@gmail.com', 40, 108);
+        .text('Phone: +94 70 345 1261  Email: venujageenodh@gmail.com', 40, 108);
 
     // Top Right: Document Title
-    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(24).text(title, 40, 55, { align: 'right', width: doc.page.width - 80 });
+    doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(24).text(cleanText(title), 40, 55, { align: 'right', width: doc.page.width - 80 });
 
     // Header Divider
     doc.moveTo(40, 125).lineTo(doc.page.width - 40, 125).strokeColor('#DDD').stroke();
@@ -38,23 +44,23 @@ function buildCustomerBox(doc, customer, number, date, title) {
     const y = 145;
     // Bill To Section (Left)
     doc.fillColor('#333').font('Helvetica-Bold').fontSize(9).text('BILL TO', 40, y);
-    doc.fillColor('#000').font('Helvetica-Bold').fontSize(11).text(customer.name.toUpperCase(), 40, y + 14);
+    doc.fillColor('#000').font('Helvetica-Bold').fontSize(11).text(cleanText(customer.name).toUpperCase(), 40, y + 14);
     doc.fillColor('#333').font('Helvetica').fontSize(9)
-        .text(customer.company || '', 40, y + 28)
-        .text(customer.address || '', 40, y + 40)
-        .text(customer.city || '', 40, y + 52)
-        .text(`📞 ${customer.phone || ''}`, 40, y + 64)
-        .text(customer.website || '', 40, y + 76);
+        .text(cleanText(customer.company), 40, y + 28)
+        .text(cleanText(customer.address), 40, y + 40)
+        .text(cleanText(customer.city), 40, y + 52)
+        .text(`Phone: ${cleanText(customer.phone)}`, 40, y + 64)
+        .text(cleanText(customer.website), 40, y + 76);
 
     // Metadata Section (Right)
     const midX = doc.page.width - 240;
     doc.font('Helvetica-Bold').fontSize(10);
-    doc.text(`${title}#`, midX, y + 14);
-    doc.text(`${title} Date:`, midX, y + 32);
+    doc.text(`${cleanText(title)}#`, midX, y + 14);
+    doc.text(`${cleanText(title)} Date:`, midX, y + 32);
 
     doc.font('Helvetica').fontSize(10);
-    doc.text(number, midX + 100, y + 14, { align: 'right', width: 100 });
-    doc.text(date, midX + 100, y + 32, { align: 'right', width: 100 });
+    doc.text(cleanText(number), midX + 100, y + 14, { align: 'right', width: 100 });
+    doc.text(cleanText(date), midX + 100, y + 32, { align: 'right', width: 100 });
 
     doc.y = y + 100;
 }
@@ -83,10 +89,10 @@ function buildItemsTable(doc, items) {
 
         doc.fillColor('#000').font('Helvetica').fontSize(10)
             .text(i + 1, cols.hash + 5, rowY)
-            .font('Helvetica-Bold').text(item.name, cols.desc, rowY, { width: 230 });
+            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, rowY, { width: 230 });
 
         if (item.description || item.customization) {
-            doc.font('Helvetica').fontSize(8).fillColor('#666').text(item.description || item.customization, cols.desc, doc.y + 2, { width: 230 });
+            doc.font('Helvetica').fontSize(8).fillColor('#666').text(cleanText(item.description || item.customization), cols.desc, doc.y + 2, { width: 230 });
         }
 
         const currentY = doc.y;
@@ -126,10 +132,10 @@ function buildDeliveryItemsTable(doc, items) {
     items.forEach((item, i) => {
         doc.fillColor('#000').font('Helvetica').fontSize(10)
             .text(i + 1, cols.hash + 5, rowY)
-            .font('Helvetica-Bold').text(item.name, cols.desc, rowY, { width: 350 });
+            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, rowY, { width: 350 });
 
         if (item.description || item.customization) {
-            doc.font('Helvetica').fontSize(8).fillColor('#666').text(item.description || item.customization, cols.desc, doc.y + 2, { width: 350 });
+            doc.font('Helvetica').fontSize(8).fillColor('#666').text(cleanText(item.description || item.customization), cols.desc, doc.y + 2, { width: 350 });
         }
 
         const currentY = doc.y;
@@ -223,7 +229,7 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
 
         if (quotation.notes) {
             doc.moveDown().fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
-                .font('Helvetica').text(quotation.notes);
+                .font('Helvetica').text(cleanText(quotation.notes));
         }
         buildFooter(doc, false);
         doc.end();
@@ -250,7 +256,7 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
 
         if (order.notes) {
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
-                .font('Helvetica').text(order.notes);
+                .font('Helvetica').text(cleanText(order.notes));
         }
         buildFooter(doc, true);
         doc.end();
@@ -277,7 +283,7 @@ router.get('/delivery/:id', requireAdminAuth, async (req, res) => {
         if (order.notes) {
             doc.y += 20;
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
-                .font('Helvetica').text(order.notes);
+                .font('Helvetica').text(cleanText(order.notes));
         }
         
         // Delivery Signature Area
@@ -310,7 +316,7 @@ router.get('/receipt/:id', requireAdminAuth, async (req, res) => {
         doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(16).text('One Fine', 40, 40);
         doc.fillColor('#333').font('Helvetica').fontSize(8)
             .text('Imbulgoda, Sri Lanka', 40, 60)
-            .text('📞 +94 70 345 1261', 40, 72);
+            .text('Phone: +94 70 345 1261', 40, 72);
 
         // Top Right: Title
         doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(18).text('RECEIPT', 40, 40, { align: 'right', width: doc.page.width - 80 });
@@ -326,7 +332,7 @@ router.get('/receipt/:id', requireAdminAuth, async (req, res) => {
 
         if (customer) {
             doc.fillColor('#333').font('Helvetica-Bold').fontSize(10).text('RECEIVED FROM', 40, doc.y);
-            doc.fillColor('#000').font('Helvetica').fontSize(11).text(customer.name.toUpperCase(), 40, doc.y + 4);
+            doc.fillColor('#000').font('Helvetica').fontSize(11).text(cleanText(customer.name).toUpperCase(), 40, doc.y + 4);
             doc.y += 15;
         }
 
@@ -344,11 +350,11 @@ router.get('/receipt/:id', requireAdminAuth, async (req, res) => {
 
         doc.fillColor('#000').font('Helvetica').fontSize(10)
             .text(dateStr, 150, contentY)
-            .text(payment.method, 150, contentY + 20)
-            .text(payment.reference || '-', 150, contentY + 40);
+            .text(cleanText(payment.method), 150, contentY + 20)
+            .text(cleanText(payment.reference || '-'), 150, contentY + 40);
             
         if (relatedNum) {
-            doc.text(relatedNum, 150, contentY + 60);
+            doc.text(cleanText(relatedNum), 150, contentY + 60);
         }
 
         // Amount Box

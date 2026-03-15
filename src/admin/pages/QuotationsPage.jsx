@@ -1,8 +1,29 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { apiFetch, formatLKR, formatDate, StatusBadge, apiUrl } from '../utils';
+import { apiFetch, formatLKR, formatDate, StatusBadge, apiUrl, formatDateTime } from '../utils';
+import { HiCheckCircle, HiClock, HiDocumentText, HiMail, HiPrinter, HiArrowRight, HiMinusCircle } from 'react-icons/hi';
 import { useAdminAuth } from '../AdminAuthContext';
 
+import { useProducts } from '../../hooks/useProducts';
+
+// Helper to extract a clean number from price strings (e.g. "Rs. 4,950")
+function extractNumeric(formatted) {
+    return formatted ? Number(formatted.replace(/[^\d]/g, '')) : 0;
+}
+
+function SectionHeader({ title, subtitle, action }) {
+    return (
+        <div className="flex items-center justify-between mb-6">
+            <div>
+                <h2 className="text-lg font-black text-[#1B2A4A] tracking-tight text-left">{title}</h2>
+                {subtitle && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-left">{subtitle}</p>}
+            </div>
+            {action}
+        </div>
+    );
+}
+
 function QuotationForm({ onSave, token, initialData = null }) {
+    const { products } = useProducts();
     const [customer, setCustomer] = useState(initialData?.customer || { name: '', phone: '', email: '', address: '', company: '' });
     const [items, setItems] = useState(initialData?.items || [{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const [extra, setExtra] = useState({
@@ -16,20 +37,84 @@ function QuotationForm({ onSave, token, initialData = null }) {
 
     const addItem = () => setItems(i => [...i, { name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const removeItem = (idx) => setItems(i => i.filter((_, j) => j !== idx));
-    const updateItem = (idx, field, val) => setItems(i => i.map((item, j) => j === idx ? { ...item, [field]: val } : item));
+    const updateItem = (idx, field, val) => {
+        setItems(i => {
+            const newItems = [...i];
+            let value = val;
+
+            if (field === 'discount' && val !== '') {
+                const num = Number(val);
+                if (num > 100) value = 100;
+            }
+
+            newItems[idx] = { ...newItems[idx], [field]: value };
+            
+            // Auto-fill price and description if a product name was completely selected
+            if (field === 'name') {
+                const foundProduct = products.find(p => p.name === val);
+                if (foundProduct) {
+                    newItems[idx].unitPrice = extractNumeric(foundProduct.price) || 0;
+                    // Keep existing description if there is one, otherwise could add something from product if it had one
+                }
+            }
+            return newItems;
+        });
+    };
 
     const subtotal = items.reduce((s, i) => s + i.qty * i.unitPrice * (1 - (i.discount || 0) / 100), 0);
     const total = subtotal - Number(extra.discountAmount) + Number(extra.deliveryCharge) + subtotal * Number(extra.tax) / 100;
 
     const submit = async (e) => {
-        e.preventDefault(); setSaving(true);
+        e.preventDefault();
+        
+        // --- VALIDATIONS ---
+        if (items.length === 0) {
+            alert('Please add at least one line item to the quotation.');
+            return;
+        }
+
+        for (const item of items) {
+            if (!item.name?.trim()) {
+                alert('All items must have a product name.');
+                return;
+            }
+            if (Number(item.qty) <= 0) {
+                alert(`Quantity for "${item.name}" must be greater than zero.`);
+                return;
+            }
+            if (Number(item.unitPrice) < 0) {
+                alert(`Unit price for "${item.name}" cannot be negative.`);
+                return;
+            }
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (customer.email && !emailRegex.test(customer.email)) {
+             alert('Please enter a valid email address.');
+             return;
+        }
+        // -------------------
+
+        setSaving(true);
         try {
             const path = initialData ? `/quotations/${initialData._id}` : '/quotations';
             const method = initialData ? 'PUT' : 'POST';
 
+            // Also check for a productId matching the name to save the reference
+            const preparedItems = items.map(i => {
+                const foundProduct = products.find(p => p.name === i.name);
+                return { 
+                    ...i, 
+                    productId: foundProduct ? foundProduct._id : null,
+                    qty: Number(i.qty), 
+                    unitPrice: Number(i.unitPrice), 
+                    discount: Number(i.discount) 
+                };
+            });
+
             await apiFetch(path, {
                 method, body: JSON.stringify({
-                    customer, items: items.map(i => ({ ...i, qty: Number(i.qty), unitPrice: Number(i.unitPrice), discount: Number(i.discount) })),
+                    customer, items: preparedItems,
                     ...extra, discountAmount: Number(extra.discountAmount), deliveryCharge: Number(extra.deliveryCharge), tax: Number(extra.tax),
                 })
             }, token);
@@ -39,6 +124,12 @@ function QuotationForm({ onSave, token, initialData = null }) {
 
     return (
         <form onSubmit={submit} className="space-y-5">
+            <datalist id="products-list">
+                {products?.map(p => (
+                    <option key={p._id} value={p.name} />
+                ))}
+            </datalist>
+
             <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
                 <h3 className="text-sm font-bold text-[#1B2A4A] uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Customer Details</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -46,7 +137,7 @@ function QuotationForm({ onSave, token, initialData = null }) {
                         <div key={k} className="relative group">
                             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 transition-colors group-focus-within:text-[#C9A84C]">{l}</label>
                             <input value={customer[k]} onChange={e => setCustomer(c => ({ ...c, [k]: e.target.value }))}
-                                required={k === 'name'} placeholder={p}
+                                required={k === 'name'} placeholder={p} type={k === 'email' ? 'email' : 'text'}
                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-all bg-slate-50/50 hover:bg-slate-50 focus:bg-white placeholder:text-slate-300" />
                         </div>
                     ))}
@@ -62,48 +153,63 @@ function QuotationForm({ onSave, token, initialData = null }) {
                     </button>
                 </div>
 
-                <div className="hidden sm:grid grid-cols-[1fr_100px_120px_100px_40px] gap-3 mb-2 px-2">
+                <div className="hidden sm:grid grid-cols-[1fr_80px_110px_80px_110px_40px] gap-3 mb-2 px-2">
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Product Description</p>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-center">Quantity</p>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Price (LKR)</p>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-center">Discount %</p>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Total (LKR)</p>
                 </div>
 
                 <div className="space-y-3">
-                    {items.map((item, idx) => (
-                        <div key={idx} className="group flex flex-col sm:grid sm:grid-cols-[1fr_100px_120px_100px_40px] gap-3 items-center bg-white p-3 sm:p-2 sm:bg-transparent rounded-xl shadow-sm sm:shadow-none border border-slate-100 sm:border-transparent transition-all hover:bg-white hover:shadow-sm hover:border-slate-100">
+                    {items.map((item, idx) => {
+                        const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
+                        return (
+                            <div key={idx} className="group flex flex-col sm:grid sm:grid-cols-[1fr_80px_110px_80px_110px_40px] gap-3 items-start sm:items-center bg-white p-3 sm:p-2 sm:bg-transparent rounded-xl shadow-sm sm:shadow-none border border-slate-100 sm:border-transparent transition-all hover:bg-white hover:shadow-sm hover:border-slate-100">
 
-                            <div className="w-full relative">
-                                <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Product</span>
-                                <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
+                                <div className="w-full relative flex flex-col gap-2">
+                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Product</span>
+                                    <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
+                                    <input placeholder="Notes or Custom Description" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
+                                        className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
+                                </div>
+
+                                <div className="w-full relative h-full flex items-start">
+                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Qty</span>
+                                    <input type="number" placeholder="Qty" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)} required
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center mt-0 sm:mt-1" />
+                                </div>
+
+                                <div className="w-full relative h-full flex items-start">
+                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Price</span>
+                                    <input type="number" placeholder="Unit Price" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)} required
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-right mt-0 sm:mt-1" />
+                                </div>
+
+                                <div className="w-full relative h-full flex items-start">
+                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Disc%</span>
+                                    <input type="number" placeholder="Disc%" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
+                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center mt-0 sm:mt-1" />
+                                </div>
+
+                                <div className="w-full relative h-full flex items-start sm:justify-end">
+                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Total</span>
+                                    <div className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm font-bold text-[#1B2A4A] sm:text-right mt-0 sm:mt-1 overflow-hidden truncate">
+                                        {rowTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                </div>
+
+                                <div className="w-full h-full flex items-start sm:justify-center">
+                                    <button type="button" onClick={() => removeItem(idx)} title="Remove Item"
+                                        className="w-full sm:w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 sm:hover:bg-red-50 transition-colors mt-0 sm:mt-1.5">
+                                        <svg className="w-5 h-5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        <span className="sm:hidden text-sm font-semibold flex items-center justify-center w-full bg-red-50 py-2 rounded-lg text-red-500">Remove Item</span>
+                                    </button>
+                                </div>
                             </div>
-
-                            <div className="w-full relative">
-                                <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Qty</span>
-                                <input type="number" placeholder="Qty" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)} required
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center" />
-                            </div>
-
-                            <div className="w-full relative">
-                                <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Price</span>
-                                <input type="number" placeholder="Unit Price" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)} required
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-right" />
-                            </div>
-
-                            <div className="w-full relative">
-                                <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Disc%</span>
-                                <input type="number" placeholder="Disc%" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center" />
-                            </div>
-
-                            <button type="button" onClick={() => removeItem(idx)} title="Remove Item"
-                                className="w-full sm:w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 sm:hover:bg-red-50 transition-colors">
-                                <svg className="w-5 h-5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                <span className="sm:hidden text-sm font-semibold flex items-center justify-center w-full bg-red-50 py-2 rounded-lg text-red-500 mt-1">Remove Item</span>
-                            </button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
                 {items.length === 0 && (
                     <div className="py-8 text-center text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl mt-3">
@@ -175,87 +281,149 @@ function QuotationView({ data, onBack }) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between mb-4">
-                <button onClick={onBack} className="text-slate-400 hover:text-[#1B2A4A] flex items-center gap-1">← Back</button>
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-8">
+                <button onClick={onBack} className="text-xs font-bold text-slate-400 hover:text-[#1B2A4A] flex items-center gap-2 uppercase tracking-widest transition-colors">
+                    <HiArrowRight className="rotate-180" /> Back to Pipeline
+                </button>
+                <div className="flex items-center gap-4">
+                    <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-sm transition-all">
+                        <HiPrinter className="text-sm" /> Print PDF
+                    </button>
                     <StatusBadge status={data.status} />
-                    <h2 className="font-bold text-[#1B2A4A] text-lg">{data.qNumber}</h2>
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Customer Details</h3>
-                    <div className="space-y-3">
-                        <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase">Name</p>
-                            <p className="font-bold text-[#1B2A4A]">{data.customer?.name}</p>
-                        </div>
-                        {data.customer?.company && (
+            {/* Workflow Stepper */}
+            <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm mb-8">
+                <div className="relative flex items-center justify-between">
+                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0"></div>
+                    {['DRAFT', 'SENT', 'ACCEPTED', 'CONVERTED'].map((s, i) => {
+                        const stages = ['DRAFT', 'SENT', 'ACCEPTED', 'CONVERTED'];
+                        const currentIdx = stages.indexOf(data.status);
+                        const thisIdx = stages.indexOf(s);
+                        const isActive = thisIdx <= currentIdx;
+                        const isCurrent = thisIdx === currentIdx;
+
+                        return (
+                            <div key={s} className="relative z-10 flex flex-col items-center">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${
+                                    isActive ? 'bg-[#1B2A4A] border-[#C9A84C] text-white' : 'bg-white border-slate-100 text-slate-300'
+                                } ${isCurrent ? 'ring-4 ring-[#C9A84C]/20 scale-110' : ''}`}>
+                                    {isActive && thisIdx < currentIdx ? <HiCheckCircle className="text-xl" /> : <span className="text-xs font-black">{i + 1}</span>}
+                                </div>
+                                <span className={`mt-3 text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-[#1B2A4A]' : 'text-slate-300'}`}>{s}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-[1fr_350px]">
+                <div className="space-y-8">
+                    <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
+                        <SectionHeader title="Customer Information" subtitle="Client Contact Details" />
+                        <div className="grid gap-6 sm:grid-cols-2">
                             <div>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase">Company</p>
-                                <p className="font-medium text-slate-700">{data.customer.company}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Full Name</p>
+                                <p className="font-bold text-[#1B2A4A] text-lg">{data.customer?.name}</p>
+                                {data.customer?.company && <p className="text-xs font-bold text-[#C9A84C] mt-0.5">{data.customer.company}</p>}
                             </div>
-                        )}
-                        <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase">Contact</p>
-                            <p className="text-sm text-slate-600 font-medium">{data.customer?.phone} • {data.customer?.email}</p>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Phone</p>
+                                    <p className="text-sm font-bold text-[#1B2A4A]">{data.customer?.phone || '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Email</p>
+                                    <p className="text-sm font-bold text-[#1B2A4A]">{data.customer?.email || '—'}</p>
+                                </div>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Billing Address</p>
+                                <p className="text-sm text-slate-600 leading-relaxed font-medium">{data.customer?.address || 'No address provided'}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase">Address</p>
-                            <p className="text-sm text-slate-600 font-medium whitespace-pre-wrap">{data.customer?.address}</p>
+                    </div>
+
+                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-8 py-5 border-b border-slate-50 bg-slate-50/30">
+                            <h3 className="text-xs font-black text-[#1B2A4A] uppercase tracking-widest">Quotation Items</h3>
                         </div>
+                        <table className="w-full text-sm">
+                            <thead className="text-left text-[10px] text-slate-400 uppercase font-black tracking-[0.2em] border-b border-slate-50">
+                                <tr>
+                                    <th className="px-8 py-4">Item Description</th>
+                                    <th className="px-8 py-4 text-center">Qty</th>
+                                    <th className="px-8 py-4 text-right">Unit Price</th>
+                                    <th className="px-8 py-4 text-right">Row Total</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {data.items?.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
+                                        <td className="px-8 py-5">
+                                            <p className="font-bold text-[#1B2A4A]">{item.name}</p>
+                                            <p className="text-[11px] text-slate-400 font-medium mt-1">{item.description}</p>
+                                        </td>
+                                        <td className="px-8 py-5 text-center font-black text-slate-400">{item.qty}</td>
+                                        <td className="px-8 py-5 text-right font-bold text-slate-600">{formatLKR(item.unitPrice)}</td>
+                                        <td className="px-8 py-5 text-right font-black text-[#1B2A4A]">{formatLKR(item.qty * item.unitPrice)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
-                    <div>
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Summary</h3>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Valid Until</span>
-                                <span className="font-bold text-[#1B2A4A]">{formatDate(data.validUntil)}</span>
+                <div className="space-y-8">
+                    <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A84C]/5 rounded-bl-full -mr-10 -mt-10"></div>
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 relative z-10">Financial Overview</h3>
+                        <div className="space-y-4 relative z-10">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="font-bold text-slate-400 uppercase text-[10px]">Subtotal</span>
+                                <span className="font-bold text-slate-600">{formatLKR(data.subtotal)}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Items</span>
-                                <span className="font-bold text-[#1B2A4A]">{data.items?.length || 0}</span>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="font-bold text-slate-400 uppercase text-[10px]">Discount</span>
+                                <span className="font-bold text-red-500">-{formatLKR(data.discountAmount)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="font-bold text-slate-400 uppercase text-[10px]">Delivery</span>
+                                <span className="font-bold text-slate-600">+{formatLKR(data.deliveryCharge)}</span>
+                            </div>
+                            <div className="pt-4 border-t border-slate-100">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Grand Total</p>
+                                <p className="text-3xl font-black text-[#1B2A4A] tracking-tight">{formatLKR(data.total)}</p>
                             </div>
                         </div>
                     </div>
-                    <div className="mt-6 rounded-xl bg-[#1B2A4A] p-4">
-                        <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Total Quotation Amount</p>
-                        <p className="text-[#C9A84C] text-2xl font-black">{formatLKR(data.total)}</p>
+
+                    <div className="bg-[#1B2A4A] rounded-3xl p-8 shadow-xl relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        <h3 className="text-xs font-black text-[#C9A84C] uppercase tracking-widest mb-6 relative z-10">Activity History</h3>
+                        <div className="space-y-6 relative z-10">
+                            {data.timeline?.map((t, i) => (
+                                <div key={i} className="flex gap-4 group">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-2 h-2 rounded-full bg-[#C9A84C] group-last:bg-[#C9A84C] ring-4 ring-[#C9A84C]/20" />
+                                        <div className="w-0.5 h-full bg-slate-700/50 group-last:bg-transparent my-1" />
+                                    </div>
+                                    <div className="pb-4">
+                                        <p className="text-[10px] font-black text-[#C9A84C] leading-none uppercase tracking-widest">{t.status}</p>
+                                        <p className="text-xs text-white/80 font-medium mt-1.5">{t.note}</p>
+                                        <p className="text-[9px] text-white/40 font-bold uppercase mt-2">{formatDateTime(t.at)}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            {!data.timeline?.length && (
+                                <div className="text-center py-4">
+                                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">No activity recorded</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/50">
-                    <h3 className="text-xs font-bold text-[#1B2A4A] uppercase tracking-widest">Line Items</h3>
-                </div>
-                <table className="w-full text-sm">
-                    <thead className="text-left text-[10px] text-slate-400 uppercase font-bold border-b border-slate-50">
-                        <tr>
-                            <th className="px-6 py-3">Description</th>
-                            <th className="px-6 py-3 text-center">Qty</th>
-                            <th className="px-6 py-3 text-right">Price</th>
-                            <th className="px-6 py-3 text-right">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {data.items?.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/30">
-                                <td className="px-6 py-4">
-                                    <p className="font-bold text-[#1B2A4A]">{item.name}</p>
-                                    <p className="text-xs text-slate-400">{item.description}</p>
-                                </td>
-                                <td className="px-6 py-4 text-center font-medium text-slate-600">{item.qty}</td>
-                                <td className="px-6 py-4 text-right font-medium text-slate-600">{formatLKR(item.unitPrice)}</td>
-                                <td className="px-6 py-4 text-right font-bold text-[#1B2A4A]">{formatLKR(item.qty * item.unitPrice)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
             </div>
 
             {data.notes && (
@@ -293,11 +461,13 @@ export default function QuotationsPage() {
         localStorage.setItem('quotation_view_mode', next);
     };
 
-    const convertToInvoice = async (id) => {
-        if (!window.confirm('Convert this quotation to an invoice?')) return;
+    const convertToOrder = async (id) => {
+        if (!window.confirm('Convert this quotation to an active Order and Invoice?')) return;
         try {
-            await apiFetch(`/quotations/${id}/convert`, { method: 'POST', body: JSON.stringify({}) }, token);
+            const resp = await apiFetch(`/quotations/${id}/convert`, { method: 'POST', body: JSON.stringify({}) }, token);
+            alert(`Quotation converted! Order #${resp.order.orderNumber} created.`);
             fetchQuotations();
+            setView('list');
         } catch (e) { alert(e.message); }
     };
 
@@ -378,9 +548,9 @@ export default function QuotationsPage() {
                                                 Edit
                                             </button>
                                             {q.status !== 'CONVERTED' && q.status !== 'REJECTED' && (
-                                                <button onClick={() => convertToInvoice(q._id)}
+                                                <button onClick={() => convertToOrder(q._id)}
                                                     className="rounded-full border border-[#C9A84C]/30 px-2.5 py-1 text-[10px] font-bold text-[#C9A84C] hover:bg-[#C9A84C]/10">
-                                                    → Invoice
+                                                    → Convert to Order
                                                 </button>
                                             )}
                                         </div>

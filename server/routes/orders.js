@@ -3,6 +3,9 @@ const router = express.Router();
 const Order = require('../models/Order');
 const { requireAdminAuth, requirePermission } = require('../middleware/auth');
 const { adjustStock } = require('./inventory');
+const { logAction } = require('../utils/logger');
+const { deductStockForOrder, generateInvoiceForOrder } = require('../services/orderService');
+const { syncCustomerFromOrder } = require('../services/customerService');
 
 // GET /api/orders
 router.get('/', requireAdminAuth, requirePermission('orders.view'), async (req, res) => {
@@ -61,20 +64,18 @@ router.post('/', async (req, res) => {
             timeline: [{ status: 'NEW', note: 'Order placed', at: new Date() }],
         });
 
-        // Auto-deduct stock for each item
-        for (const item of items) {
-            if (item.productId) {
-                try {
-                    await adjustStock({
-                        productId: item.productId,
-                        type: 'OUT',
-                        qty: item.qty,
-                        reason: `Order ${order.orderNumber}`,
-                        orderId: order._id,
-                    });
-                } catch (e) { /* non-fatal — log only */ console.warn('Stock deduct failed:', e.message); }
-            }
-        }
+        // Auto-deduct stock, generate invoice and sync customer
+        await deductStockForOrder(order);
+        await generateInvoiceForOrder(order, req.admin);
+        await syncCustomerFromOrder(order);
+
+        await logAction({
+            action: 'CREATE_ORDER',
+            admin: req.admin,
+            resourceType: 'Order',
+            resourceId: order._id,
+            details: `Order ${order.orderNumber} created via ${order.source}`
+        });
 
         res.status(201).json(order);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -107,6 +108,16 @@ router.put('/:id/status', requireAdminAuth, requirePermission('orders.edit'), as
             at: new Date(),
         });
         await order.save();
+
+        await logAction({
+            action: 'UPDATE_ORDER_STATUS',
+            admin: req.admin,
+            resourceType: 'Order',
+            resourceId: order._id,
+            details: `Status changed to ${status}`,
+            metadata: { note }
+        });
+
         res.json(order);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });

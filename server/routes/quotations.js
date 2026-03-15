@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Quotation = require('../models/Quotation');
 const Invoice = require('../models/Invoice');
+const Order = require('../models/Order');
 const { requireAdminAuth, requirePermission } = require('../middleware/auth');
+const { logAction } = require('../utils/logger');
+const { deductStockForOrder, generateInvoiceForOrder } = require('../services/orderService');
 
 function calcTotals(items, discountAmount = 0, deliveryCharge = 0, taxPct = 0) {
     const subtotal = items.reduce((s, i) => {
@@ -73,33 +76,56 @@ router.put('/:id', requireAdminAuth, requirePermission('quotations.edit'), async
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/quotations/:id/convert — convert quotation to invoice
+// POST /api/quotations/:id/convert — convert quotation to Order + Invoice
 router.post('/:id/convert', requireAdminAuth, requirePermission('quotations.edit'), async (req, res) => {
     try {
         const quotation = await Quotation.findById(req.params.id);
         if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
         if (quotation.status === 'CONVERTED') return res.status(400).json({ error: 'Already converted' });
 
-        const invoice = await Invoice.create({
-            quotationId: quotation._id,
+        // 1. Create the Order object
+        const order = new Order({
+            source: 'ADMIN',
             customer: quotation.customer,
-            items: quotation.items,
+            items: quotation.items.map(i => ({
+                productId: i.productId,
+                name: i.name,
+                qty: i.qty,
+                unitPrice: i.unitPrice
+            })),
             subtotal: quotation.subtotal,
-            discountAmount: quotation.discountAmount,
             deliveryCharge: quotation.deliveryCharge,
-            tax: quotation.tax,
-            taxAmount: quotation.taxAmount,
             total: quotation.total,
-            dueDate: req.body.dueDate,
             notes: quotation.notes,
-            createdBy: req.admin._id || null,
+            quotationId: quotation._id,
+            orderStatus: 'CONFIRMED'
         });
 
+        // 2. Process Order (deduct stock and auto-gen invoice)
+        await order.save(); // Save first to get ID and Order Number
+        await deductStockForOrder(order);
+        const invoiceId = await generateInvoiceForOrder(order, req.admin);
+
+        // 3. Update Quotation
         quotation.status = 'CONVERTED';
-        quotation.convertedToInvoiceId = invoice._id;
+        quotation.convertedToInvoiceId = invoiceId;
+        quotation.timeline.push({
+            status: 'CONVERTED',
+            note: `Converted to Order ${order.orderNumber}`,
+            adminId: req.admin._id
+        });
         await quotation.save();
 
-        res.status(201).json({ invoice, quotation });
+        // 4. Log Action
+        await logAction({
+            action: 'CONVERT_QUOTATION',
+            admin: req.admin,
+            resourceType: 'Quotation',
+            resourceId: quotation._id,
+            details: `Converted Quotation ${quotation.qNumber} to Order ${order.orderNumber}`
+        });
+
+        res.status(201).json({ order, quotation, orderId: order._id });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
