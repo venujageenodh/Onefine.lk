@@ -81,6 +81,65 @@ router.post('/', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/**
+ * NEW: POST /api/biz/orders/admin — Create order directly from Admin Panel
+ */
+router.post('/admin', requireAdminAuth, requirePermission('orders.edit'), async (req, res) => {
+    try {
+        const { customer, items, deliveryCharge = 0, notes, paymentMethod, orderStatus = 'CONFIRMED' } = req.body;
+        
+        if (!customer?.name) return res.status(400).json({ error: 'Customer details required' });
+        if (!items?.length) return res.status(400).json({ error: 'At least one item required' });
+
+        const subtotal = items.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty)), 0);
+        const total = subtotal + Number(deliveryCharge);
+
+        const order = await Order.create({
+            source: 'ADMIN',
+            orderType: 'BULK',
+            customer,
+            items: items.map(i => ({
+                productId: i.productId || null,
+                name: i.name,
+                qty: i.qty,
+                unitPrice: i.unitPrice
+            })),
+            subtotal,
+            deliveryCharge: Number(deliveryCharge),
+            total,
+            notes,
+            orderStatus,
+            paymentStatus: 'UNPAID',
+            paymentMethod: paymentMethod || 'CASH',
+            assignedAdminId: req.admin._id,
+            timeline: [{ 
+                status: orderStatus, 
+                note: 'Direct order created via Admin Panel', 
+                adminId: req.admin._id,
+                adminName: req.admin.name,
+                at: new Date() 
+            }]
+        });
+
+        // Trigger business workflows
+        await deductStockForOrder(order);
+        await generateInvoiceForOrder(order, req.admin);
+        await syncCustomerFromOrder(order);
+
+        await logAction({
+            action: 'ADMIN_CREATE_ORDER',
+            admin: req.admin,
+            resourceType: 'Order',
+            resourceId: order._id,
+            details: `Admin ${req.admin.name} created direct order ${order.orderNumber}`
+        });
+
+        res.status(201).json(order);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/orders/:id
 router.get('/:id', requireAdminAuth, requirePermission('orders.view'), async (req, res) => {
     try {
@@ -122,19 +181,50 @@ router.put('/:id/status', requireAdminAuth, requirePermission('orders.edit'), as
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PUT /api/orders/:id — general update (assign admin, notes, etc.)
+// PUT /api/orders/:id — general update (assign admin, notes, customer, items, etc.)
 router.put('/:id', requireAdminAuth, requirePermission('orders.edit'), async (req, res) => {
     try {
-        const { assignedAdminId, adminNotes, paymentStatus, paymentMethod, deliveryCharge } = req.body;
-        const update = {};
-        if (assignedAdminId !== undefined) update.assignedAdminId = assignedAdminId;
-        if (adminNotes !== undefined) update.adminNotes = adminNotes;
-        if (paymentStatus !== undefined) update.paymentStatus = paymentStatus;
-        if (paymentMethod !== undefined) update.paymentMethod = paymentMethod;
-        if (deliveryCharge !== undefined) update.deliveryCharge = Number(deliveryCharge);
+        const { 
+            assignedAdminId, adminNotes, paymentStatus, paymentMethod, 
+            deliveryCharge, customer, items, notes, orderStatus 
+        } = req.body;
+        
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
 
-        const order = await Order.findByIdAndUpdate(req.params.id, update, { new: true });
-        if (!order) return res.status(404).json({ error: 'Not found' });
+        if (assignedAdminId !== undefined) order.assignedAdminId = assignedAdminId;
+        if (adminNotes !== undefined) order.adminNotes = adminNotes;
+        if (notes !== undefined) order.notes = notes;
+        if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
+        if (paymentMethod !== undefined) order.paymentMethod = paymentMethod;
+        if (orderStatus !== undefined) order.orderStatus = orderStatus;
+        
+        if (customer) {
+            order.customer = { ...order.customer, ...customer };
+        }
+
+        if (items) {
+            order.items = items;
+            const subtotal = items.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty)), 0);
+            order.subtotal = subtotal;
+            order.total = subtotal + (deliveryCharge !== undefined ? Number(deliveryCharge) : order.deliveryCharge);
+        }
+
+        if (deliveryCharge !== undefined) {
+            order.deliveryCharge = Number(deliveryCharge);
+            order.total = order.subtotal + order.deliveryCharge;
+        }
+
+        await order.save();
+
+        await logAction({
+            action: 'UPDATE_ORDER',
+            admin: req.admin,
+            resourceType: 'Order',
+            resourceId: order._id,
+            details: `Order ${order.orderNumber} details updated by ${req.admin.name}`
+        });
+
         res.json(order);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });

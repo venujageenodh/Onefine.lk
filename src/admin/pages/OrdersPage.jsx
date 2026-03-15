@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch, formatLKR, formatDateTime, StatusBadge, apiUrl, formatDate } from '../utils';
 import { useAdminAuth } from '../AdminAuthContext';
-import { HiSearch, HiFilter, HiChevronRight, HiDownload, HiPrinter, HiTruck, HiCheckCircle, HiXCircle, HiDotsVertical, HiCalendar } from 'react-icons/hi';
+import { HiSearch, HiFilter, HiChevronRight, HiDownload, HiPrinter, HiTruck, HiCheckCircle, HiXCircle, HiDotsVertical, HiCalendar, HiPlus, HiTrash, HiUser } from 'react-icons/hi';
 
 const ORDER_STATUSES = ['PENDING', 'PROCESSING', 'DISPATCHED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
 
@@ -27,6 +27,8 @@ export default function OrdersPage() {
     const [statusNote, setStatusNote] = useState('');
     const [newStatus, setNewStatus] = useState('');
     const [updating, setUpdating] = useState(false);
+    const [orderForm, setOrderForm] = useState(null); // { mode: 'create'|'edit', data: order }
+    const [products, setProducts] = useState([]);
 
     const fetchOrders = useCallback(async () => {
         setLoading(true);
@@ -41,6 +43,19 @@ export default function OrdersPage() {
 
     useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [pData, cData] = await Promise.all([
+                    apiFetch('/admin/products', {}, token),
+                    apiFetch('/customers?limit=100', {}, token)
+                ]);
+                setProducts(pData || []);
+            } catch (e) { console.error('Error fetching modal data:', e); }
+        };
+        if (token) fetchData();
+    }, [token]);
+
     const updateStatus = async () => {
         if (!newStatus || !selected) return;
         setUpdating(true);
@@ -53,6 +68,15 @@ export default function OrdersPage() {
             setSelected(null);
         } catch (e) { alert(e.message); }
         finally { setUpdating(false); }
+    };
+
+    const cancelOrder = async (id) => {
+        if (!confirm('Are you sure you want to cancel this order?')) return;
+        try {
+            await apiFetch(`/biz/orders/${id}`, { method: 'DELETE' }, token);
+            fetchOrders();
+            setSelected(null);
+        } catch (e) { alert(e.message); }
     };
 
     const downloadPdf = (type, id) => window.open(apiUrl(`/pdf/${type}/${id}?token=${token}`), '_blank');
@@ -104,7 +128,10 @@ export default function OrdersPage() {
                     Operational Pipeline <span className="text-[#1B2A4A] ml-2">{total} Total Orders</span>
                 </p>
                 <div className="flex items-center gap-3">
-                    <button className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-[#1B2A4A] transition-colors"><HiDownload /></button>
+                    <button onClick={() => setOrderForm({ mode: 'create' })} className="px-4 py-2 rounded-xl bg-[#C9A84C] text-[10px] font-black text-[#1B2A4A] uppercase tracking-widest hover:bg-[#b0903b] transition-all shadow-md flex items-center gap-2">
+                        <span className="text-sm">+</span> New Order
+                    </button>
+                    <button className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-[#1B2A4A] transition-colors"><HiSearch /></button>
                 </div>
             </div>
 
@@ -295,17 +322,229 @@ export default function OrdersPage() {
                             </div>
                         </div>
 
-                        <div className="p-8 border-t border-slate-50 grid grid-cols-2 gap-4">
+                        <div className="p-8 border-t border-slate-50 grid grid-cols-4 gap-4">
                             <button onClick={() => downloadPdf('proforma', selected._id)} className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] hover:bg-slate-100 transition-all">
-                                <HiPrinter className="text-lg" /> Download Invoice
+                                <HiPrinter className="text-lg" /> Invoice
                             </button>
                             <button onClick={() => downloadPdf('delivery', selected._id)} className="flex items-center justify-center gap-2 rounded-xl bg-slate-50 py-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.15em] hover:bg-slate-100 transition-all">
-                                <HiTruck className="text-lg" /> Delivery Note
+                                <HiTruck className="text-lg" /> Delivery
+                            </button>
+                            <button onClick={() => setOrderForm({ mode: 'edit', data: selected })} className="flex items-center justify-center gap-2 rounded-xl bg-indigo-50 py-4 text-[10px] font-black text-indigo-600 uppercase tracking-[0.15em] hover:bg-indigo-100 transition-all">
+                                Edit Order
+                            </button>
+                            <button onClick={() => cancelOrder(selected._id)} className="flex items-center justify-center gap-2 rounded-xl bg-red-50 py-4 text-[10px] font-black text-red-600 uppercase tracking-[0.15em] hover:bg-red-100 transition-all">
+                                Cancel Order
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* NEW: Order Form Modal (Create/Edit) */}
+            {orderForm && (
+                <OrderFormModal 
+                    mode={orderForm.mode}
+                    initialData={orderForm.data}
+                    onClose={() => setOrderForm(null)} 
+                    products={products} 
+                    token={token} 
+                    onSuccess={() => { setOrderForm(null); setSelected(null); fetchOrders(); }} 
+                />
+            )}
+        </div>
+    );
+}
+
+function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess }) {
+    const isEdit = mode === 'edit';
+    const [customer, setCustomer] = useState(initialData?.customer || { name: '', phone: '', email: '', address: '', city: '' });
+    const [items, setItems] = useState(initialData?.items?.map(i => ({
+        productId: i.productId?._id || i.productId || '',
+        name: i.name,
+        qty: i.qty,
+        unitPrice: i.unitPrice
+    })) || [{ productId: '', name: '', qty: 1, unitPrice: 0 }]);
+    const [deliveryCharge, setDeliveryCharge] = useState(initialData?.deliveryCharge || 350);
+    const [notes, setNotes] = useState(initialData?.notes || '');
+    const [saving, setSaving] = useState(false);
+
+    const addItem = () => setItems([...items, { productId: '', name: '', qty: 1, unitPrice: 0 }]);
+    const removeItem = (idx) => setItems(items.filter((_, i) => i !== idx));
+    
+    const updateItem = (idx, field, value) => {
+        const newItems = [...items];
+        if (field === 'productId') {
+            const p = products.find(x => x._id === value);
+            if (p) {
+                newItems[idx] = { ...newItems[idx], productId: value, name: p.name, unitPrice: parseFloat(p.price.replace(/[^0-9.]/g, '')) || 0 };
+            }
+        } else {
+            newItems[idx][field] = value;
+        }
+        setItems(newItems);
+    };
+
+    const subtotal = items.reduce((s, i) => s + (i.qty * i.unitPrice), 0);
+    const total = subtotal + Number(deliveryCharge);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!customer.name) return alert('Name required');
+        if (items.some(i => !i.name || i.qty < 1)) return alert('Invalid items');
+        
+        setSaving(true);
+        try {
+            const url = isEdit ? `/biz/orders/${initialData._id}` : '/biz/orders/admin';
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            // For general update, we need to match the backend's expected structure if it's different
+            // The backend PUT /api/orders/:id expects specific fields. 
+            // Let's check server/routes/orders.js PUT /:id (line 185)
+            // It expects: { assignedAdminId, adminNotes, paymentStatus, paymentMethod, deliveryCharge }
+            // Wait, that's not enough for a full "Edit". 
+            // I might need to add a full update route or use the existing one if I modify it.
+            
+            await apiFetch(url, {
+                method,
+                body: JSON.stringify(isEdit ? { 
+                    customer, items, deliveryCharge, notes,
+                    // also include existing updateable fields
+                    adminNotes: notes, 
+                } : { customer, items, deliveryCharge, notes })
+            }, token);
+            onSuccess();
+        } catch (err) { alert(err.message); }
+        finally { setSaving(false); }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#1B2A4A]/60 backdrop-blur-md transition-all">
+            <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+                <div className="px-10 py-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+                    <div>
+                        <h2 className="text-2xl font-black text-[#1B2A4A] tracking-tight">
+                            {isEdit ? `Edit Order ${initialData.orderNumber}` : 'Direct Order Entry'}
+                        </h2>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Operational Administrative Portal</p>
+                    </div>
+                    <button onClick={onClose} className="w-12 h-12 rounded-full flex items-center justify-center text-slate-400 hover:bg-white hover:text-[#1B2A4A] transition-all text-3xl shadow-sm border border-slate-100">×</button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar">
+                    {/* Customer Block */}
+                    <section className="space-y-6">
+                        <SectionHeader title="Client Identification" subtitle="Primary Contact & Delivery" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-50">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Customer Full Name *</label>
+                                    <input required value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})}
+                                        className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Phone Number</label>
+                                        <input value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})}
+                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
+                                        <input type="email" value={customer.email} onChange={e => setCustomer({...customer, email: e.target.value})}
+                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Delivery Address / Destination</label>
+                                <textarea rows="4" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})}
+                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A] resize-none h-[116px]" />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Items Block */}
+                    <section className="space-y-6">
+                        <div className="flex items-center justify-between">
+                            <SectionHeader title="Manifest & Logistics" subtitle="Product Selection & Pricing" />
+                            <button type="button" onClick={addItem} className="px-4 py-2 rounded-xl bg-[#1B2A4A] text-[10px] font-black text-[#C9A84C] uppercase tracking-widest hover:scale-105 transition-all shadow-md flex items-center gap-2">
+                                <HiPlus /> Add Entry
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            {items.map((item, idx) => (
+                                <div key={idx} className="flex flex-wrap md:flex-nowrap gap-4 items-end bg-slate-50/50 p-6 rounded-[30px] border border-slate-100 group hover:border-slate-200 transition-all">
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Select Unit</label>
+                                        <select value={item.productId} onChange={e => updateItem(idx, 'productId', e.target.value)}
+                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A] appearance-none">
+                                            <option value="">Manual Entry / Custom</option>
+                                            {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex-[1.5] min-w-[200px]">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Item Description</label>
+                                        <input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)}
+                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A]" />
+                                    </div>
+                                    <div className="w-24">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Qty</label>
+                                        <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', parseInt(e.target.value))}
+                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+                                    </div>
+                                    <div className="w-32">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Price (Unit)</label>
+                                        <input type="number" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', parseFloat(e.target.value))}
+                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A]" />
+                                    </div>
+                                    <button type="button" onClick={() => removeItem(idx)} className="p-4 rounded-2xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                                        <HiTrash className="text-xl" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Summary Block */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div className="space-y-4">
+                            <SectionHeader title="Administrative Notes" subtitle="Internal Correspondence" />
+                            <textarea rows="4" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Attach private notes or delivery instructions..."
+                                className="w-full rounded-[30px] border border-slate-200 px-6 py-5 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-medium text-[#1B2A4A] resize-none" />
+                        </div>
+                        <div className="bg-[#1B2A4A] rounded-[40px] p-10 text-white relative overflow-hidden shadow-2xl">
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                            <h3 className="text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.2em] mb-8 relative z-10">Financial Summary</h3>
+                            <div className="space-y-4 relative z-10">
+                                <div className="flex justify-between items-center text-white/60">
+                                    <span className="text-xs font-bold uppercase tracking-widest">Subtotal Manifest</span>
+                                    <span className="font-mono">{formatLKR(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-white/60">
+                                    <span className="text-xs font-bold uppercase tracking-widest">Courier & Logistics</span>
+                                    <input type="number" value={deliveryCharge} onChange={e => setDeliveryCharge(e.target.value)}
+                                        className="w-24 bg-transparent border-b border-white/20 text-right font-mono outline-none focus:border-[#C9A84C]" />
+                                </div>
+                                <div className="pt-6 border-t border-white/10 flex justify-between items-end">
+                                    <span className="text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.3em]">Gross Total</span>
+                                    <span className="text-3xl font-black font-display text-[#C9A84C]">{formatLKR(total)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-6 flex gap-4">
+                        <button type="button" onClick={onClose}
+                            className="flex-1 rounded-2xl border border-slate-200 py-5 text-xs font-black text-slate-400 uppercase tracking-widest hover:border-[#1B2A4A] hover:text-[#1B2A4A] transition-all">
+                            Cancel Abort
+                        </button>
+                        <button type="submit" disabled={saving}
+                            className="flex-[2] rounded-2xl bg-[#C9A84C] py-5 text-xs font-black text-[#1B2A4A] uppercase tracking-widest shadow-xl hover:bg-[#b0903b] hover:-translate-y-1 transition-all disabled:opacity-50">
+                            {saving ? 'Synchronizing Operational Data...' : (isEdit ? 'Update Operational Data' : 'Confirm & Generate Order')}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }
