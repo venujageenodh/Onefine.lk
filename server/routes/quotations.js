@@ -90,8 +90,10 @@ router.post('/:id/convert', requireAdminAuth, requirePermission('quotations.edit
             items: quotation.items.map(i => ({
                 productId: i.productId,
                 name: i.name,
+                description: i.description,
                 qty: i.qty,
-                unitPrice: i.unitPrice
+                unitPrice: i.unitPrice,
+                discount: i.discount || 0
             })),
             subtotal: quotation.subtotal,
             deliveryCharge: quotation.deliveryCharge,

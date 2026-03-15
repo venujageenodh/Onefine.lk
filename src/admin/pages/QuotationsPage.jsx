@@ -49,58 +49,29 @@ function QuotationForm({ onSave, token, initialData = null }) {
 
             newItems[idx] = { ...newItems[idx], [field]: value };
             
-            // Auto-fill price and description if a product name was completely selected
             if (field === 'name') {
                 const foundProduct = products.find(p => p.name === val);
                 if (foundProduct) {
                     newItems[idx].unitPrice = extractNumeric(foundProduct.price) || 0;
-                    // Keep existing description if there is one, otherwise could add something from product if it had one
                 }
             }
             return newItems;
         });
     };
 
-    const subtotal = items.reduce((s, i) => s + i.qty * i.unitPrice * (1 - (i.discount || 0) / 100), 0);
-    const total = subtotal - Number(extra.discountAmount) + Number(extra.deliveryCharge) + subtotal * Number(extra.tax) / 100;
+    const subtotal = items.reduce((s, i) => s + Number(i.qty) * Number(i.unitPrice) * (1 - (Number(i.discount) || 0) / 100), 0);
+    const taxAmount = (subtotal - Number(extra.discountAmount)) * (Number(extra.tax) / 100);
+    const total = subtotal - Number(extra.discountAmount) + Number(extra.deliveryCharge) + taxAmount;
 
     const submit = async (e) => {
         e.preventDefault();
-        
-        // --- VALIDATIONS ---
-        if (items.length === 0) {
-            alert('Please add at least one line item to the quotation.');
-            return;
-        }
-
-        for (const item of items) {
-            if (!item.name?.trim()) {
-                alert('All items must have a product name.');
-                return;
-            }
-            if (Number(item.qty) <= 0) {
-                alert(`Quantity for "${item.name}" must be greater than zero.`);
-                return;
-            }
-            if (Number(item.unitPrice) < 0) {
-                alert(`Unit price for "${item.name}" cannot be negative.`);
-                return;
-            }
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (customer.email && !emailRegex.test(customer.email)) {
-             alert('Please enter a valid email address.');
-             return;
-        }
-        // -------------------
+        if (items.length === 0) return alert('At least one line item is required.');
 
         setSaving(true);
         try {
             const path = initialData ? `/quotations/${initialData._id}` : '/quotations';
             const method = initialData ? 'PUT' : 'POST';
 
-            // Also check for a productId matching the name to save the reference
             const preparedItems = items.map(i => {
                 const foundProduct = products.find(p => p.name === i.name);
                 return { 
@@ -115,7 +86,10 @@ function QuotationForm({ onSave, token, initialData = null }) {
             await apiFetch(path, {
                 method, body: JSON.stringify({
                     customer, items: preparedItems,
-                    ...extra, discountAmount: Number(extra.discountAmount), deliveryCharge: Number(extra.deliveryCharge), tax: Number(extra.tax),
+                    ...extra, 
+                    discountAmount: Number(extra.discountAmount), 
+                    deliveryCharge: Number(extra.deliveryCharge), 
+                    tax: Number(extra.tax),
                 })
             }, token);
             onSave();
@@ -123,153 +97,173 @@ function QuotationForm({ onSave, token, initialData = null }) {
     };
 
     return (
-        <form onSubmit={submit} className="space-y-5">
+        <form onSubmit={submit} className="space-y-12">
             <datalist id="products-list">
                 {products?.map(p => (
                     <option key={p._id} value={p.name} />
                 ))}
             </datalist>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#1B2A4A] uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Customer Details</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    {[['name', 'Customer Name *', 'e.g. John Doe'], ['phone', 'Phone', 'e.g. 077 123 4567'], ['email', 'Email Address', 'e.g. john@example.com'], ['company', 'Company', 'e.g. Acme Corp'], ['address', 'Address', 'e.g. 123 Main St']].map(([k, l, p]) => (
-                        <div key={k} className="relative group">
-                            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 transition-colors group-focus-within:text-[#C9A84C]">{l}</label>
-                            <input value={customer[k]} onChange={e => setCustomer(c => ({ ...c, [k]: e.target.value }))}
-                                required={k === 'name'} placeholder={p} type={k === 'email' ? 'email' : 'text'}
-                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-all bg-slate-50/50 hover:bg-slate-50 focus:bg-white placeholder:text-slate-300" />
+            {/* Customer Section */}
+            <section className="space-y-6">
+                <SectionHeader title="Customer Identification" subtitle="Primary Contact & Entity" />
+                <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-4">
+                        <div className="relative group">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Customer Full Name *</label>
+                            <input required value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})}
+                                className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
                         </div>
-                    ))}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="relative group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Phone Number</label>
+                                <input value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})}
+                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                            </div>
+                            <div className="relative group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Email Address</label>
+                                <input type="email" value={customer.email} onChange={e => setCustomer({...customer, email: e.target.value})}
+                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="relative group">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Company / Entity Name</label>
+                            <input value={customer.company} onChange={e => setCustomer({...customer, company: e.target.value})}
+                                className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                        </div>
+                        <div className="relative group">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Billing / Delivery Address</label>
+                            <input value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})}
+                                className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 sm:p-5">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-[#1B2A4A] uppercase tracking-wider">Line Items</h3>
-                    <button type="button" onClick={addItem} className="flex items-center gap-1.5 rounded-full bg-[#1B2A4A] px-3 py-1.5 text-xs font-bold text-[#C9A84C] hover:bg-[#243a5e] transition-colors shadow-sm">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-                        Add Item
-                    </button>
-                </div>
+            {/* Line Items Section */}
+            <section className="space-y-6">
+                <div className="bg-slate-50/50 rounded-[40px] p-8 border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-sm font-black text-[#1B2A4A] uppercase tracking-widest">Line Items</h3>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Product Specification & Pricing</p>
+                        </div>
+                        <button type="button" onClick={addItem} className="flex items-center gap-2 rounded-full bg-[#1B2A4A] px-5 py-2 text-[10px] font-black text-[#C9A84C] hover:scale-105 transition-all shadow-md uppercase tracking-widest">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                            Add Entry
+                        </button>
+                    </div>
 
-                <div className="hidden sm:grid grid-cols-[1fr_80px_110px_80px_110px_40px] gap-3 mb-2 px-2">
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Product Description</p>
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-center">Quantity</p>
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Price (LKR)</p>
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-center">Discount %</p>
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide text-right">Total (LKR)</p>
-                </div>
+                    <div className="hidden md:grid grid-cols-[1fr_80px_120px_100px_120px_40px] gap-4 mb-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        <div>Product Description</div>
+                        <div className="text-center">Quantity</div>
+                        <div className="text-right">Price (LKR)</div>
+                        <div className="text-center">Discount %</div>
+                        <div className="text-right">Total (LKR)</div>
+                        <div></div>
+                    </div>
 
-                <div className="space-y-3">
-                    {items.map((item, idx) => {
-                        const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
-                        return (
-                            <div key={idx} className="group flex flex-col sm:grid sm:grid-cols-[1fr_80px_110px_80px_110px_40px] gap-3 items-start sm:items-center bg-white p-3 sm:p-2 sm:bg-transparent rounded-xl shadow-sm sm:shadow-none border border-slate-100 sm:border-transparent transition-all hover:bg-white hover:shadow-sm hover:border-slate-100">
-
-                                <div className="w-full relative flex flex-col gap-2">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Product</span>
-                                    <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
-                                    <input placeholder="Notes or Custom Description" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
-                                        className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Qty</span>
-                                    <input type="number" placeholder="Qty" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)} required
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center mt-0 sm:mt-1" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Price</span>
-                                    <input type="number" placeholder="Unit Price" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)} required
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-right mt-0 sm:mt-1" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Disc%</span>
-                                    <input type="number" placeholder="Disc%" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center mt-0 sm:mt-1" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start sm:justify-end">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Total</span>
-                                    <div className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm font-bold text-[#1B2A4A] sm:text-right mt-0 sm:mt-1 overflow-hidden truncate">
+                    <div className="space-y-4">
+                        {items.map((item, idx) => {
+                            const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
+                            return (
+                                <div key={idx} className="flex flex-col md:grid md:grid-cols-[1fr_80px_120px_100px_120px_40px] gap-4 items-center bg-white p-4 rounded-3xl shadow-sm border border-slate-50 group hover:border-[#C9A84C]/30 transition-all">
+                                    <div className="w-full relative flex flex-col gap-2">
+                                        <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
+                                            className="w-full rounded-xl border border-slate-100 px-4 py-2.5 text-xs outline-none focus:border-[#C9A84C] bg-slate-50 transition-all font-bold text-[#1B2A4A]" />
+                                        <input placeholder="Notes or Custom Description" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
+                                            className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[10px] outline-none focus:bg-white focus:border-slate-100 transition-all" />
+                                    </div>
+                                    <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+                                    <input type="number" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A]" />
+                                    <input type="number" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+                                    <div className="w-full text-right px-2 font-black text-[#1B2A4A] text-sm truncate">
                                         {rowTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </div>
-                                </div>
-
-                                <div className="w-full h-full flex items-start sm:justify-center">
-                                    <button type="button" onClick={() => removeItem(idx)} title="Remove Item"
-                                        className="w-full sm:w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 sm:hover:bg-red-50 transition-colors mt-0 sm:mt-1.5">
-                                        <svg className="w-5 h-5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        <span className="sm:hidden text-sm font-semibold flex items-center justify-center w-full bg-red-50 py-2 rounded-lg text-red-500">Remove Item</span>
+                                    <button type="button" onClick={() => removeItem(idx)} className="p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                                        <HiMinusCircle className="text-xl" />
                                     </button>
                                 </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* Summary Section */}
+            <section className="space-y-6">
+                <div className="bg-slate-50/50 rounded-[40px] p-8 border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Overall Discount</label>
+                        <div className="relative">
+                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">LKR</span>
+                            <input type="number" min="0" value={extra.discountAmount} onChange={e => setExtra({...extra, discountAmount: e.target.value})}
+                                className="w-full rounded-2xl border border-slate-200 pl-14 pr-6 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A] shadow-sm" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Delivery Charge</label>
+                        <div className="relative">
+                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">LKR</span>
+                            <input type="number" min="0" value={extra.deliveryCharge} onChange={e => setExtra({...extra, deliveryCharge: e.target.value})}
+                                className="w-full rounded-2xl border border-slate-200 pl-14 pr-6 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A] shadow-sm" />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Tax Rate (%)</label>
+                        <div className="relative">
+                            <span className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">%</span>
+                            <input type="number" min="0" value={extra.tax} onChange={e => setExtra({...extra, tax: e.target.value})}
+                                className="w-full rounded-2xl border border-slate-200 pl-6 pr-12 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A] shadow-sm" />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="relative group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Quotation Valid Until</label>
+                                <input type="date" value={extra.validUntil} onChange={e => setExtra({...extra, validUntil: e.target.value})}
+                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-slate-600" />
                             </div>
-                        );
-                    })}
-                </div>
-                {items.length === 0 && (
-                    <div className="py-8 text-center text-slate-400 text-sm font-medium border-2 border-dashed border-slate-200 rounded-xl mt-3">
-                        No items added yet. Click &quot;Add Item&quot; to begin.
+                            <div className="relative group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Notes / Terms</label>
+                                <input value={extra.notes} onChange={e => setExtra({...extra, notes: e.target.value})} placeholder="e.g. 50% advance required"
+                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-medium text-[#1B2A4A]" />
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 sm:p-5 grid gap-4 sm:grid-cols-3">
-                <div className="relative">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Overall Discount</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">LKR</span>
-                        <input type="number" min="0" value={extra.discountAmount} onChange={e => setExtra(x => ({ ...x, discountAmount: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 pl-12 pr-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow bg-white" />
-                    </div>
-                </div>
-                <div className="relative">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Delivery</label>
-                    <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">LKR</span>
-                        <input type="number" min="0" value={extra.deliveryCharge} onChange={e => setExtra(x => ({ ...x, deliveryCharge: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 pl-12 pr-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow bg-white" />
+                    
+                    <div className="bg-[#1B2A4A] rounded-[40px] p-10 flex flex-col justify-center relative overflow-hidden shadow-2xl">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A84C] blur-[60px] opacity-10"></div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Gross Subtotal</span>
+                            <span className="text-white font-bold">{formatLKR(subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-6 text-[#C9A84C]">
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Calculated Tax</span>
+                            <span className="font-bold">+{formatLKR(taxAmount)}</span>
+                        </div>
+                        <div className="pt-8 border-t border-white/10">
+                            <span className="block text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.4em] mb-2">Estimated Total Pipeline</span>
+                            <div className="text-4xl font-black text-white tracking-tighter drop-shadow-lg">{formatLKR(total)}</div>
+                        </div>
                     </div>
                 </div>
-                <div className="relative">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Tax</label>
-                    <div className="relative">
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">%</span>
-                        <input type="number" min="0" value={extra.tax} onChange={e => setExtra(x => ({ ...x, tax: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 pl-3 pr-8 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow bg-white text-right" />
-                    </div>
-                </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#1B2A4A] uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Additional Information</h3>
-                <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                    <div className="flex-1 relative group">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 transition-colors group-focus-within:text-[#C9A84C]">Valid Until</label>
-                        <input type="date" value={extra.validUntil} onChange={e => setExtra(x => ({ ...x, validUntil: e.target.value }))}
-                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-all bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-slate-700" />
-                    </div>
-                    <div className="flex-[2] relative group">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 transition-colors group-focus-within:text-[#C9A84C]">Notes / Terms</label>
-                        <input value={extra.notes} onChange={e => setExtra(x => ({ ...x, notes: e.target.value }))} placeholder="e.g. 50% advance payment required"
-                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-all bg-slate-50/50 hover:bg-slate-50 focus:bg-white placeholder:text-slate-300" />
-                    </div>
-                </div>
-
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between rounded-xl bg-gradient-to-r from-[#1B2A4A] to-slate-800 px-6 py-4 shadow-md relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                    <span className="text-white/80 text-sm font-semibold uppercase tracking-widest relative z-10 z-[1] mb-2 sm:mb-0">Estimated Total</span>
-                    <span className="text-[#C9A84C] font-black text-3xl tracking-tight relative z-10 z-[1] drop-shadow-md">{formatLKR(total)}</span>
-                </div>
-            </div>
+            </section>
 
             <button type="submit" disabled={saving}
-                className="w-full rounded-xl bg-gradient-to-r from-[#C9A84C] to-yellow-600 hover:from-[#b59540] hover:to-yellow-700 py-3.5 text-sm font-bold text-white uppercase tracking-widest shadow-lg shadow-[#C9A84C]/20 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none">
-                {saving ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Quotation' : 'Finalize & Create Quotation')}
+                className="w-full rounded-[25px] bg-[#1B2A4A] py-6 text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.01] transition-all disabled:opacity-60 flex items-center justify-center gap-3">
+                {saving ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-[#C9A84C] border-t-transparent animate-spin" />
+                ) : null}
+                {saving ? 'Processing Document...' : initialData ? 'Submit modifications & Update' : 'Finalize & Enqueue Quotation'}
             </button>
         </form>
     );

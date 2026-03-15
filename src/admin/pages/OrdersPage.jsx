@@ -360,15 +360,23 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
     const [customer, setCustomer] = useState(initialData?.customer || { name: '', phone: '', email: '', address: '', city: '' });
     const [items, setItems] = useState(initialData?.items?.map(i => ({
         productId: i.productId?._id || i.productId || '',
-        name: i.name,
-        qty: i.qty,
-        unitPrice: i.unitPrice
-    })) || [{ productId: '', name: '', qty: 1, unitPrice: 0 }]);
-    const [deliveryCharge, setDeliveryCharge] = useState(initialData?.deliveryCharge || 350);
-    const [notes, setNotes] = useState(initialData?.notes || '');
+        name: i.name || '',
+        description: i.description || '',
+        qty: i.qty || 1,
+        unitPrice: i.unitPrice || 0,
+        discount: i.discount || 0
+    })) || [{ productId: '', name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
+    
+    const [extra, setExtra] = useState({
+        discountAmount: initialData?.discountAmount || 0,
+        deliveryCharge: initialData?.deliveryCharge || 350,
+        tax: initialData?.tax || 0,
+        notes: initialData?.notes || ''
+    });
+
     const [saving, setSaving] = useState(false);
 
-    const addItem = () => setItems([...items, { productId: '', name: '', qty: 1, unitPrice: 0 }]);
+    const addItem = () => setItems([...items, { productId: '', name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const removeItem = (idx) => setItems(items.filter((_, i) => i !== idx));
     
     const updateItem = (idx, field, value) => {
@@ -376,7 +384,14 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
         if (field === 'productId') {
             const p = products.find(x => x._id === value);
             if (p) {
-                newItems[idx] = { ...newItems[idx], productId: value, name: p.name, unitPrice: parseFloat(p.price.replace(/[^0-9.]/g, '')) || 0 };
+                newItems[idx] = { 
+                    ...newItems[idx], 
+                    productId: value, 
+                    name: p.name, 
+                    unitPrice: parseFloat(p.price.replace(/[^0-9.]/g, '')) || 0 
+                };
+            } else {
+                newItems[idx].productId = '';
             }
         } else {
             newItems[idx][field] = value;
@@ -384,8 +399,9 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
         setItems(newItems);
     };
 
-    const subtotal = items.reduce((s, i) => s + (i.qty * i.unitPrice), 0);
-    const total = subtotal + Number(deliveryCharge);
+    const subtotal = items.reduce((s, i) => s + (Number(i.qty) * Number(i.unitPrice) * (1 - (Number(i.discount) || 0) / 100)), 0);
+    const taxAmount = (subtotal - Number(extra.discountAmount)) * (Number(extra.tax) / 100);
+    const total = subtotal - Number(extra.discountAmount) + Number(extra.deliveryCharge) + taxAmount;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -397,7 +413,6 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
             const url = isEdit ? `/biz/orders/${initialData._id}` : '/biz/orders/admin';
             const method = isEdit ? 'PUT' : 'POST';
             
-            // Fix: Ensure empty productId is sent as null to avoid BSON error
             const cleanedItems = items.map(i => ({
                 ...i,
                 productId: i.productId === '' ? null : i.productId
@@ -405,10 +420,15 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
             
             await apiFetch(url, {
                 method,
-                body: JSON.stringify(isEdit ? { 
-                    customer, items: cleanedItems, deliveryCharge, notes,
-                    adminNotes: notes, 
-                } : { customer, items: cleanedItems, deliveryCharge, notes })
+                body: JSON.stringify({ 
+                    customer, 
+                    items: cleanedItems, 
+                    ...extra,
+                    discountAmount: Number(extra.discountAmount),
+                    deliveryCharge: Number(extra.deliveryCharge),
+                    tax: Number(extra.tax),
+                    adminNotes: extra.notes 
+                })
             }, token);
             onSuccess();
         } catch (err) { alert(err.message); }
@@ -417,7 +437,7 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#1B2A4A]/60 backdrop-blur-md transition-all">
-            <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+            <div className="w-full max-w-5xl bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-300">
                 <div className="px-10 py-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                     <div>
                         <h2 className="text-2xl font-black text-[#1B2A4A] tracking-tight">
@@ -432,7 +452,7 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
                     {/* Customer Block */}
                     <section className="space-y-6">
                         <SectionHeader title="Client Identification" subtitle="Primary Contact & Delivery" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Customer Full Name *</label>
@@ -460,85 +480,128 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
                         </div>
                     </section>
 
-                    {/* Items Block */}
+                    {/* Line Items Block */}
                     <section className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <SectionHeader title="Manifest & Logistics" subtitle="Product Selection & Pricing" />
-                            <button type="button" onClick={addItem} className="px-4 py-2 rounded-xl bg-[#1B2A4A] text-[10px] font-black text-[#C9A84C] uppercase tracking-widest hover:scale-105 transition-all shadow-md flex items-center gap-2">
-                                <HiPlus /> Add Entry
-                            </button>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            {items.map((item, idx) => (
-                                <div key={idx} className="flex flex-wrap md:flex-nowrap gap-4 items-end bg-slate-50/50 p-6 rounded-[30px] border border-slate-100 group hover:border-slate-200 transition-all">
-                                    <div className="flex-1 min-w-[200px]">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Select Unit</label>
-                                        <select value={item.productId} onChange={e => updateItem(idx, 'productId', e.target.value)}
-                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A] appearance-none">
-                                            <option value="">Manual Entry / Custom</option>
-                                            {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex-[1.5] min-w-[200px]">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Item Description</label>
-                                        <input value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)}
-                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A]" />
-                                    </div>
-                                    <div className="w-24">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Qty</label>
-                                        <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', parseInt(e.target.value))}
-                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
-                                    </div>
-                                    <div className="w-32">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Price (Unit)</label>
-                                        <input type="number" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', parseFloat(e.target.value))}
-                                            className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A]" />
-                                    </div>
-                                    <button type="button" onClick={() => removeItem(idx)} className="p-4 rounded-2xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
-                                        <HiTrash className="text-xl" />
-                                    </button>
+                        <div className="bg-slate-50/50 rounded-[40px] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
+                            <div className="flex items-center justify-between mb-10">
+                                <div>
+                                    <h3 className="text-sm font-black text-[#1B2A4A] uppercase tracking-widest">Payload Specifications</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Itemized Inventory Manifest</p>
                                 </div>
-                            ))}
+                                <button type="button" onClick={addItem} className="flex items-center gap-2 rounded-full bg-[#1B2A4A] px-6 py-3 text-[10px] font-black text-[#C9A84C] hover:scale-105 transition-all shadow-md uppercase tracking-widest">
+                                    <HiPlus /> Add Entry
+                                </button>
+                            </div>
+
+                            <div className="hidden md:grid grid-cols-[1fr_80px_120px_100px_120px_40px] gap-6 mb-6 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                <div>Standard Designation</div>
+                                <div className="text-center">Quantity</div>
+                                <div className="text-right">Unit Price</div>
+                                <div className="text-center">Disc %</div>
+                                <div className="text-right">Line Total</div>
+                                <div></div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {items.map((item, idx) => {
+                                    const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
+                                    return (
+                                        <div key={idx} className="flex flex-col md:grid md:grid-cols-[1fr_80px_120px_100px_120px_40px] gap-6 items-center bg-white p-6 rounded-3xl shadow-sm border border-slate-100 group hover:border-[#C9A84C]/30 transition-all">
+                                            <div className="w-full space-y-3">
+                                                <select value={item.productId} onChange={e => updateItem(idx, 'productId', e.target.value)}
+                                                    className="w-full rounded-xl border border-slate-100 px-4 py-3 text-xs outline-none focus:border-[#C9A84C] bg-slate-50/50 transition-all font-bold text-[#1B2A4A]">
+                                                    <option value="">Custom Designation...</option>
+                                                    {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                                                </select>
+                                                <input placeholder="Item Name / Identifier" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required
+                                                    className="w-full rounded-xl border border-slate-100 px-4 py-2 text-[10px] outline-none focus:border-[#C9A84C] bg-transparent transition-all font-bold" />
+                                                <input placeholder="Add item description or specifics..." value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
+                                                    className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[9px] outline-none focus:bg-white focus:border-slate-100 transition-all lowercase italic" />
+                                            </div>
+                                            <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)}
+                                                className="w-full rounded-xl border border-slate-100 px-3 py-3 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+                                            <input type="number" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
+                                                className="w-full rounded-xl border border-slate-100 px-3 py-3 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A]" />
+                                            <input type="number" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
+                                                className="w-full rounded-xl border border-slate-100 px-3 py-3 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+                                            <div className="w-full text-right px-2 font-black text-[#1B2A4A] text-sm">
+                                                {rowTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </div>
+                                            <button type="button" onClick={() => removeItem(idx)} className="p-3 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center">
+                                                <HiTrash className="text-xl" />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </section>
 
                     {/* Summary Block */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        <div className="space-y-4">
-                            <SectionHeader title="Administrative Notes" subtitle="Internal Correspondence" />
-                            <textarea rows="4" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Attach private notes or delivery instructions..."
-                                className="w-full rounded-[30px] border border-slate-200 px-6 py-5 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-medium text-[#1B2A4A] resize-none" />
-                        </div>
-                        <div className="bg-[#1B2A4A] rounded-[40px] p-10 text-white relative overflow-hidden shadow-2xl">
-                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                            <h3 className="text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.2em] mb-8 relative z-10">Financial Summary</h3>
-                            <div className="space-y-4 relative z-10">
-                                <div className="flex justify-between items-center text-white/60">
-                                    <span className="text-xs font-bold uppercase tracking-widest">Subtotal Manifest</span>
-                                    <span className="font-mono">{formatLKR(subtotal)}</span>
+                    <section className="space-y-6">
+                        <div className="bg-slate-50/50 rounded-[40px] p-10 border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-10">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Discretionary Discount</label>
+                                <div className="relative">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">LKR</span>
+                                    <input type="number" min="0" value={extra.discountAmount} onChange={e => setExtra({...extra, discountAmount: e.target.value})}
+                                        className="w-full rounded-[25px] border border-slate-200 pl-16 pr-8 py-5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A] shadow-sm" />
                                 </div>
-                                <div className="flex justify-between items-center text-white/60">
-                                    <span className="text-xs font-bold uppercase tracking-widest">Courier & Logistics</span>
-                                    <input type="number" value={deliveryCharge} onChange={e => setDeliveryCharge(e.target.value)}
-                                        className="w-24 bg-transparent border-b border-white/20 text-right font-mono outline-none focus:border-[#C9A84C]" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Logistics Allocation</label>
+                                <div className="relative">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">LKR</span>
+                                    <input type="number" min="0" value={extra.deliveryCharge} onChange={e => setExtra({...extra, deliveryCharge: e.target.value})}
+                                        className="w-full rounded-[25px] border border-slate-200 pl-16 pr-8 py-5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-[#1B2A4A] shadow-sm" />
                                 </div>
-                                <div className="pt-6 border-t border-white/10 flex justify-between items-end">
-                                    <span className="text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.3em]">Gross Total</span>
-                                    <span className="text-3xl font-black font-display text-[#C9A84C]">{formatLKR(total)}</span>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Tax Matrix (%)</label>
+                                <div className="relative">
+                                    <span className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-black">%</span>
+                                    <input type="number" min="0" value={extra.tax} onChange={e => setExtra({...extra, tax: e.target.value})}
+                                        className="w-full rounded-[25px] border border-slate-200 pl-8 pr-14 py-5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A] shadow-sm" />
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="pt-6 flex gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-4">
+                            <div className="relative group">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-2">Internal Notes & Context</label>
+                                <textarea rows="3" placeholder="Restricted administrative notes..." value={extra.notes} onChange={e => setExtra({...extra, notes: e.target.value})}
+                                    className="w-full rounded-[30px] border border-slate-200 px-8 py-6 text-sm outline-none focus:border-[#1B2A4A] bg-slate-50/30 focus:bg-white transition-all font-medium text-slate-600 resize-none h-[180px]" />
+                            </div>
+                            
+                            <div className="bg-[#1B2A4A] rounded-[40px] p-12 flex flex-col justify-center relative shadow-2xl overflow-hidden">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-[#C9A84C] blur-[80px] opacity-10"></div>
+                                <div className="flex justify-between items-center mb-6">
+                                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em]">Operational Subtotal</span>
+                                    <span className="text-white font-bold">{formatLKR(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-8 text-[#C9A84C]">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.4em]">Tax Calculation</span>
+                                    <span className="font-bold">+{formatLKR(taxAmount)}</span>
+                                </div>
+                                <div className="pt-10 border-t border-white/10">
+                                    <span className="block text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.5em] mb-3">Total Payable Recognized</span>
+                                    <div className="text-5xl font-black text-white tracking-tighter drop-shadow-xl">{formatLKR(total)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div className="pt-6 flex gap-6">
                         <button type="button" onClick={onClose}
-                            className="flex-1 rounded-2xl border border-slate-200 py-5 text-xs font-black text-slate-400 uppercase tracking-widest hover:border-[#1B2A4A] hover:text-[#1B2A4A] transition-all">
-                            Cancel Abort
+                            className="flex-1 rounded-[30px] border border-slate-200 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] hover:border-[#1B2A4A] hover:text-[#1B2A4A] transition-all">
+                            Abort Session
                         </button>
                         <button type="submit" disabled={saving}
-                            className="flex-[2] rounded-2xl bg-[#C9A84C] py-5 text-xs font-black text-[#1B2A4A] uppercase tracking-widest shadow-xl hover:bg-[#b0903b] hover:-translate-y-1 transition-all disabled:opacity-50">
-                            {saving ? 'Synchronizing Operational Data...' : (isEdit ? 'Update Operational Data' : 'Confirm & Generate Order')}
+                            className="flex-[2] rounded-[30px] bg-[#1B2A4A] py-6 text-[10px] font-black text-[#C9A84C] uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-4">
+                            {saving ? (
+                                <div className="w-5 h-5 rounded-full border-2 border-[#C9A84C] border-t-transparent animate-spin" />
+                            ) : null}
+                            {saving ? 'Synchronizing Pipeline...' : (isEdit ? 'Authorize Pipeline Update' : 'Authorize & Execute Order')}
                         </button>
                     </div>
                 </form>

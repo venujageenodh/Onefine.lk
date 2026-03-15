@@ -81,18 +81,19 @@ router.post('/', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-/**
- * NEW: POST /api/biz/orders/admin — Create order directly from Admin Panel
- */
 router.post('/admin', requireAdminAuth, requirePermission('orders.edit'), async (req, res) => {
     try {
-        const { customer, items, deliveryCharge = 0, notes, paymentMethod, orderStatus = 'CONFIRMED' } = req.body;
+        const { 
+            customer, items, deliveryCharge = 0, notes, paymentMethod, orderStatus = 'CONFIRMED',
+            tax = 0, discountAmount = 0
+        } = req.body;
         
         if (!customer?.name) return res.status(400).json({ error: 'Customer details required' });
         if (!items?.length) return res.status(400).json({ error: 'At least one item required' });
 
-        const subtotal = items.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty)), 0);
-        const total = subtotal + Number(deliveryCharge);
+        const subtotal = items.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty) * (1 - (Number(i.discount) || 0) / 100)), 0);
+        const taxAmount = (subtotal - Number(discountAmount)) * (Number(tax) / 100);
+        const total = subtotal - Number(discountAmount) + Number(deliveryCharge) + taxAmount;
 
         const order = await Order.create({
             source: 'ADMIN',
@@ -101,11 +102,16 @@ router.post('/admin', requireAdminAuth, requirePermission('orders.edit'), async 
             items: items.map(i => ({
                 productId: i.productId || null,
                 name: i.name,
+                description: i.description || '',
                 qty: i.qty,
-                unitPrice: i.unitPrice
+                unitPrice: i.unitPrice,
+                discount: i.discount || 0
             })),
             subtotal,
+            discountAmount: Number(discountAmount),
             deliveryCharge: Number(deliveryCharge),
+            tax: Number(tax),
+            taxAmount,
             total,
             notes,
             orderStatus,
@@ -205,18 +211,30 @@ router.put('/:id', requireAdminAuth, requirePermission('orders.edit'), async (re
 
         if (items) {
             order.items = items.map(i => ({
-                ...i,
-                productId: i.productId && i.productId !== '' ? i.productId : null
+                productId: i.productId && i.productId !== '' ? i.productId : null,
+                name: i.name,
+                description: i.description || '',
+                qty: Number(i.qty),
+                unitPrice: Number(i.unitPrice),
+                discount: Number(i.discount) || 0
             }));
-            const subtotal = items.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty)), 0);
-            order.subtotal = subtotal;
-            order.total = subtotal + (deliveryCharge !== undefined ? Number(deliveryCharge) : order.deliveryCharge);
         }
 
-        if (deliveryCharge !== undefined) {
-            order.deliveryCharge = Number(deliveryCharge);
-            order.total = order.subtotal + order.deliveryCharge;
-        }
+        const currentItems = items || order.items;
+        const currentDeliveryCharge = deliveryCharge !== undefined ? Number(deliveryCharge) : order.deliveryCharge;
+        const currentDiscountAmount = discountAmount !== undefined ? Number(discountAmount) : order.discountAmount;
+        const currentTax = tax !== undefined ? Number(tax) : order.tax;
+
+        const subtotal = currentItems.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty) * (1 - (Number(i.discount) || 0) / 100)), 0);
+        const taxAmount = (subtotal - currentDiscountAmount) * (currentTax / 100);
+        const total = subtotal - currentDiscountAmount + currentDeliveryCharge + taxAmount;
+
+        order.subtotal = subtotal;
+        order.discountAmount = currentDiscountAmount;
+        order.deliveryCharge = currentDeliveryCharge;
+        order.tax = currentTax;
+        order.taxAmount = taxAmount;
+        order.total = total;
 
         await order.save();
 

@@ -36,9 +36,10 @@ const generateInvoiceForOrder = async (order, admin) => {
         items: order.items.map(i => ({
             productId: i.productId,
             name: i.name,
+            description: i.description,
             qty: i.qty,
             unitPrice: i.unitPrice,
-            discount: 0 // Orders might not have line-level discounts yet, adjust if needed
+            discount: i.discount || 0
         })),
         subtotal: order.subtotal,
         deliveryCharge: order.deliveryCharge,
