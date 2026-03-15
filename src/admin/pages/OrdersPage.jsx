@@ -397,20 +397,18 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
             const url = isEdit ? `/biz/orders/${initialData._id}` : '/biz/orders/admin';
             const method = isEdit ? 'PUT' : 'POST';
             
-            // For general update, we need to match the backend's expected structure if it's different
-            // The backend PUT /api/orders/:id expects specific fields. 
-            // Let's check server/routes/orders.js PUT /:id (line 185)
-            // It expects: { assignedAdminId, adminNotes, paymentStatus, paymentMethod, deliveryCharge }
-            // Wait, that's not enough for a full "Edit". 
-            // I might need to add a full update route or use the existing one if I modify it.
+            // Fix: Ensure empty productId is sent as null to avoid BSON error
+            const cleanedItems = items.map(i => ({
+                ...i,
+                productId: i.productId === '' ? null : i.productId
+            }));
             
             await apiFetch(url, {
                 method,
                 body: JSON.stringify(isEdit ? { 
-                    customer, items, deliveryCharge, notes,
-                    // also include existing updateable fields
+                    customer, items: cleanedItems, deliveryCharge, notes,
                     adminNotes: notes, 
-                } : { customer, items, deliveryCharge, notes })
+                } : { customer, items: cleanedItems, deliveryCharge, notes })
             }, token);
             onSuccess();
         } catch (err) { alert(err.message); }

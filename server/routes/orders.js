@@ -204,7 +204,10 @@ router.put('/:id', requireAdminAuth, requirePermission('orders.edit'), async (re
         }
 
         if (items) {
-            order.items = items;
+            order.items = items.map(i => ({
+                ...i,
+                productId: i.productId && i.productId !== '' ? i.productId : null
+            }));
             const subtotal = items.reduce((s, i) => s + (Number(i.unitPrice) * Number(i.qty)), 0);
             order.subtotal = subtotal;
             order.total = subtotal + (deliveryCharge !== undefined ? Number(deliveryCharge) : order.deliveryCharge);
