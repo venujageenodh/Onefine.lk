@@ -236,8 +236,19 @@ function buildTotalsBox(doc, data, balanceOnly = false) {
     doc.y = y + 40;
 }
 
-function buildFooter(doc, showPayment = true) {
-    const y = doc.y > doc.page.height - 200 ? doc.y : doc.page.height - 220;
+function buildFooter(doc, headerData, showPayment = true) {
+    // Check if we have enough space for the entire footer block (approx 180-200 units)
+    // If not, moving to next page is safer than splitting
+    checkPageBreak(doc, 200, headerData);
+    
+    // Position at the bottom if possible, otherwise just stay where we are
+    const footerHeight = 200;
+    const bottomY = doc.page.height - footerHeight - 40;
+    if (doc.y < bottomY) {
+        doc.y = bottomY;
+    }
+
+    const y = doc.y;
 
     // Bottom Left: Terms and Instructions
     doc.fillColor('#000').font('Helvetica-Bold').fontSize(10).text('Terms & Conditions:', 40, y);
@@ -259,6 +270,7 @@ function buildFooter(doc, showPayment = true) {
     doc.moveTo(doc.page.width - 180, sigY + 60).lineTo(doc.page.width - 40, sigY + 60).strokeColor('#000').stroke();
     doc.font('Helvetica').fontSize(8).text('AUTHORIZED SIGNATURE', doc.page.width - 180, sigY + 65, { width: 140, align: 'center' });
 }
+
 
 // GET /api/pdf/quotation/:id
 router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
@@ -292,7 +304,8 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
             doc.moveDown().fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(quotation.notes));
         }
-        buildFooter(doc, false);
+        buildFooter(doc, headerData, false);
+
 
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -331,7 +344,8 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(order.notes));
         }
-        buildFooter(doc, true);
+        buildFooter(doc, headerData, true);
+
 
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
