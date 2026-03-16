@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { apiFetch, formatLKR, formatDate, StatusBadge, apiUrl, formatDateTime } from '../utils';
-import { HiCheckCircle, HiClock, HiDocumentText, HiMail, HiPrinter, HiArrowRight, HiMinusCircle } from 'react-icons/hi';
+import { HiCheckCircle, HiClock, HiDocumentText, HiMail, HiPrinter, HiArrowRight, HiMinusCircle, HiMenu } from 'react-icons/hi';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useAdminAuth } from '../AdminAuthContext';
 
 import { useProducts } from '../../hooks/useProducts';
@@ -22,10 +25,49 @@ function SectionHeader({ title, subtitle, action }) {
     );
 }
 
+
+function SortableQuotationItem({ item, idx, updateItem, removeItem, products }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+    const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 1, ...(isDragging ? { position: 'relative', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' } : {}) };
+    const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
+
+    return (
+        <div ref={setNodeRef} style={style} className={`flex flex-col md:grid md:grid-cols-[40px_1fr_80px_120px_100px_120px_40px] gap-2 items-center bg-white p-4 rounded-3xl border ${isDragging ? 'border-[#C9A84C]' : 'border-slate-50'} shadow-sm group hover:border-[#C9A84C]/30 transition-all`}>
+            <button type="button" className="p-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-[#1B2A4A] transition-colors" {...attributes} {...listeners}>
+                <HiMenu className="text-xl" />
+            </button>
+            <div className="w-full relative flex flex-col gap-2">
+                <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
+                    className="w-full rounded-xl border border-slate-100 px-4 py-2.5 text-xs outline-none focus:border-[#C9A84C] bg-slate-50 transition-all font-bold text-[#1B2A4A]" />
+                <textarea placeholder="Notes or Custom Description" value={item.description}
+                    onChange={e => {
+                        updateItem(idx, 'description', e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    ref={el => { if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} rows={1}
+                    className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[10px] outline-none focus:bg-white focus:border-slate-100 transition-all resize-none overflow-hidden" />
+            </div>
+            <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)}
+                className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+            <input type="number" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
+                className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A]" />
+            <input type="number" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
+                className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
+            <div className="w-full text-right px-2 font-black text-[#1B2A4A] text-sm truncate">
+                {rowTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <button type="button" onClick={() => removeItem(idx)} className="p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                <HiMinusCircle className="text-xl" />
+            </button>
+        </div>
+    );
+}
+
 function QuotationForm({ onSave, token, initialData = null }) {
     const { products } = useProducts();
     const [customer, setCustomer] = useState(initialData?.customer || { name: '', phone: '', email: '', address: '', company: '' });
-    const [items, setItems] = useState(initialData?.items || [{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
+    const [items, setItems] = useState((initialData?.items || [{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]).map(i => ({ ...i, id: i.id || Math.random().toString(36).substring(2, 9) })));
     const [extra, setExtra] = useState({
         discountAmount: initialData?.discountAmount || 0,
         deliveryCharge: initialData?.deliveryCharge || 0,
@@ -36,7 +78,7 @@ function QuotationForm({ onSave, token, initialData = null }) {
     });
     const [saving, setSaving] = useState(false);
 
-    const addItem = () => setItems(i => [...i, { name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
+    const addItem = () => setItems(i => [...i, { id: Math.random().toString(36).substring(2, 9), name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const removeItem = (idx) => setItems(i => i.filter((_, j) => j !== idx));
     const updateItem = (idx, field, val) => {
         setItems(i => {
@@ -63,6 +105,22 @@ function QuotationForm({ onSave, token, initialData = null }) {
     const subtotal = items.reduce((s, i) => s + Number(i.qty) * Number(i.unitPrice) * (1 - (Number(i.discount) || 0) / 100), 0);
     const taxAmount = (subtotal - Number(extra.discountAmount)) * (Number(extra.tax) / 100);
     const total = subtotal - Number(extra.discountAmount) + Number(extra.deliveryCharge) + taxAmount;
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    function handleDragEnd(event) {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setItems((items) => {
+                const oldIndex = items.findIndex((i) => i.id === active.id);
+                const newIndex = items.findIndex((i) => i.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    }
 
     const submit = async (e) => {
         e.preventDefault();
@@ -164,7 +222,8 @@ function QuotationForm({ onSave, token, initialData = null }) {
                         </button>
                     </div>
 
-                    <div className="hidden md:grid grid-cols-[1fr_80px_120px_100px_120px_40px] gap-4 mb-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                    <div className="hidden md:grid grid-cols-[40px_1fr_80px_120px_100px_120px_40px] gap-2 mb-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        <div></div>
                         <div>Product Description</div>
                         <div className="text-center">Quantity</div>
                         <div className="text-right">Price (LKR)</div>
@@ -173,39 +232,15 @@ function QuotationForm({ onSave, token, initialData = null }) {
                         <div></div>
                     </div>
 
-                    <div className="space-y-4">
-                        {items.map((item, idx) => {
-                            const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
-                            return (
-                                <div key={idx} className="flex flex-col md:grid md:grid-cols-[1fr_80px_120px_100px_120px_40px] gap-4 items-center bg-white p-4 rounded-3xl shadow-sm border border-slate-50 group hover:border-[#C9A84C]/30 transition-all">
-                                    <div className="w-full relative flex flex-col gap-2">
-                                        <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
-                                            className="w-full rounded-xl border border-slate-100 px-4 py-2.5 text-xs outline-none focus:border-[#C9A84C] bg-slate-50 transition-all font-bold text-[#1B2A4A]" />
-                                        <textarea placeholder="Notes or Custom Description" value={item.description}
-                                            onChange={e => {
-                                                updateItem(idx, 'description', e.target.value);
-                                                e.target.style.height = 'auto';
-                                                e.target.style.height = e.target.scrollHeight + 'px';
-                                            }}
-                                            ref={el => { if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} rows={1}
-                                            className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[10px] outline-none focus:bg-white focus:border-slate-100 transition-all resize-none overflow-hidden" />
-                                    </div>
-                                    <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)}
-                                        className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
-                                    <input type="number" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)}
-                                        className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-right text-[#1B2A4A]" />
-                                    <input type="number" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
-                                        className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
-                                    <div className="w-full text-right px-2 font-black text-[#1B2A4A] text-sm truncate">
-                                        {rowTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
-                                    <button type="button" onClick={() => removeItem(idx)} className="p-2.5 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all">
-                                        <HiMinusCircle className="text-xl" />
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={items} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-4">
+                                {items.map((item, idx) => (
+                                    <SortableQuotationItem key={item.id} item={item} idx={idx} updateItem={updateItem} removeItem={removeItem} products={products} />
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
                 </div>
             </section>
 

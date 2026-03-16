@@ -66,7 +66,7 @@ function buildCustomerBox(doc, customer, number, date, title) {
 }
 
 function buildItemsTable(doc, items) {
-    const cols = { hash: 40, desc: 65, qty: 310, price: 370, total: 470 };
+    const cols = { hash: 40, desc: 65, qty: 245, price: 290, disc: 375, total: 450 };
     const y = doc.y;
 
     // Table Header
@@ -75,8 +75,9 @@ function buildItemsTable(doc, items) {
         .text('#', cols.hash + 5, y + 7)
         .text('DESCRIPTION', cols.desc, y + 7)
         .text('QTY', cols.qty, y + 7, { width: 40, align: 'center' })
-        .text('PRICE', cols.price, y + 7, { width: 90, align: 'center' })
-        .text('TOTAL', cols.total, y + 7, { width: 90, align: 'right' });
+        .text('PRICE', cols.price, y + 7, { width: 80, align: 'right' })
+        .text('DISC.', cols.disc, y + 7, { width: 70, align: 'right' })
+        .text('TOTAL', cols.total, y + 7, { width: 100, align: 'right' });
 
     let rowY = y + 22;
     doc.moveTo(40, rowY).lineTo(doc.page.width - 40, rowY).strokeColor('#1B2A4A').lineWidth(1).stroke();
@@ -89,23 +90,32 @@ function buildItemsTable(doc, items) {
 
         doc.fillColor('#000').font('Helvetica').fontSize(10)
             .text(i + 1, cols.hash + 5, rowY)
-            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, rowY, { width: 230 });
+            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, rowY, { width: 170 });
 
         if (item.description || item.customization) {
-            doc.font('Helvetica').fontSize(8).fillColor('#666').text(cleanText(item.description || item.customization), cols.desc, doc.y + 2, { width: 230 });
+            doc.font('Helvetica').fontSize(8).fillColor('#666').text(cleanText(item.description || item.customization), cols.desc, doc.y + 2, { width: 170 });
         }
 
-        const currentY = doc.y;
+        let maxY = doc.y;
         
         doc.fillColor('#000').font('Helvetica').fontSize(10)
             .text(item.qty || 1, cols.qty, rowY, { width: 40, align: 'center' });
             
         if (item.unitPrice !== undefined && !item.hidePrice) {
-            doc.text(formatLKR(item.unitPrice), cols.price, rowY, { width: 90, align: 'right' })
-               .text(formatLKR(net), cols.total, rowY, { width: 90, align: 'right' });
+            doc.text(formatLKR(item.unitPrice), cols.price, rowY, { width: 80, align: 'right' });
+            
+            if (item.discount > 0) {
+                doc.font('Helvetica-Bold').text(`${item.discount}%`, cols.disc, rowY, { width: 70, align: 'right' })
+                   .font('Helvetica').fontSize(8).fillColor('#E85D75').text(`-${formatLKR(lineDiscount)}`, cols.disc, doc.y + 2, { width: 70, align: 'right' });
+            } else {
+                doc.fillColor('#94A3B8').text('-', cols.disc, rowY, { width: 70, align: 'right' });
+            }
+            maxY = Math.max(maxY, doc.y);
+
+            doc.fillColor('#000').fontSize(10).font('Helvetica-Bold').text(formatLKR(net), cols.total, rowY, { width: 100, align: 'right' });
         }
 
-        rowY = Math.max(currentY, rowY + 20) + 10;
+        rowY = Math.max(maxY, rowY + 20) + 10;
 
         // Horizontal line between items if needed, or just padding
         doc.moveTo(40, rowY - 5).lineTo(doc.page.width - 40, rowY - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
