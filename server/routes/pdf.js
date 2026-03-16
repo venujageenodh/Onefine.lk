@@ -40,6 +40,50 @@ function buildHeader(doc, title, number, date) {
     doc.y = 140;
 }
 
+function checkPageBreak(doc, heightNeeded, headerData = null) {
+    if (doc.y + heightNeeded > doc.page.height - 100) {
+        doc.addPage();
+        if (headerData) {
+            buildHeader(doc, headerData.title, headerData.number, headerData.date);
+            // Draw table header if we are in a table
+            if (headerData.tableCols) {
+                const y = doc.y;
+                doc.rect(40, y, doc.page.width - 80, 22).fill('#F1F5F9');
+                doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(9);
+                
+                const isDelivery = headerData.title.includes('DELIVERY');
+                
+                Object.entries(headerData.tableCols).forEach(([key, x]) => {
+                    let label = '';
+                    let width = 100;
+                    let align = 'left';
+                    
+                    if (key === 'hash') { label = '#'; width = 20; }
+                    else if (key === 'desc') { 
+                        label = 'DESCRIPTION'; 
+                        width = isDelivery ? 350 : 170; 
+                    }
+                    else if (key === 'qty') { label = 'QTY'; width = isDelivery ? 60 : 40; align = 'center'; }
+                    else if (key === 'price') { label = 'PRICE'; width = 80; align = 'right'; }
+                    else if (key === 'disc') { label = 'DISC.'; width = 70; align = 'right'; }
+                    else if (key === 'total') { label = 'TOTAL'; width = 100; align = 'right'; }
+                    
+                    if (label) {
+                        doc.text(label, x + (key === 'hash' ? 5 : 0), y + 7, { width, align });
+                    }
+                });
+                doc.moveTo(40, y + 22).lineTo(doc.page.width - 40, y + 22).strokeColor('#1B2A4A').lineWidth(1).stroke();
+                doc.y = y + 32;
+                return true;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+
+
 function buildCustomerBox(doc, customer, number, date, title) {
     const y = 145;
     // Bill To Section (Left)
@@ -65,8 +109,9 @@ function buildCustomerBox(doc, customer, number, date, title) {
     doc.y = y + 100;
 }
 
-function buildItemsTable(doc, items) {
+function buildItemsTable(doc, items, headerData) {
     const cols = { hash: 40, desc: 65, qty: 245, price: 290, disc: 375, total: 450 };
+    headerData.tableCols = cols;
     const y = doc.y;
 
     // Table Header
@@ -79,18 +124,21 @@ function buildItemsTable(doc, items) {
         .text('DISC.', cols.disc, y + 7, { width: 70, align: 'right' })
         .text('TOTAL', cols.total, y + 7, { width: 100, align: 'right' });
 
-    let rowY = y + 22;
-    doc.moveTo(40, rowY).lineTo(doc.page.width - 40, rowY).strokeColor('#1B2A4A').lineWidth(1).stroke();
-    rowY += 10;
+    doc.moveTo(40, y + 22).lineTo(doc.page.width - 40, y + 22).strokeColor('#1B2A4A').lineWidth(1).stroke();
+    doc.y = y + 32;
 
     items.forEach((item, i) => {
+        // Estimated height for one item line (roughly 40-60 units depending on description)
+        checkPageBreak(doc, 50, headerData);
+        
+        const currentY = doc.y;
         const lineTotal = (item.unitPrice || 0) * (item.qty || 0);
         const lineDiscount = lineTotal * (item.discount || 0) / 100;
         const net = lineTotal - lineDiscount;
 
         doc.fillColor('#000').font('Helvetica').fontSize(10)
-            .text(i + 1, cols.hash + 5, rowY)
-            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, rowY, { width: 170 });
+            .text(i + 1, cols.hash + 5, currentY)
+            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, currentY, { width: 170 });
 
         if (item.description || item.customization) {
             doc.font('Helvetica').fontSize(8).fillColor('#666').text(cleanText(item.description || item.customization), cols.desc, doc.y + 2, { width: 170 });
@@ -99,33 +147,31 @@ function buildItemsTable(doc, items) {
         let maxY = doc.y;
         
         doc.fillColor('#000').font('Helvetica').fontSize(10)
-            .text(item.qty || 1, cols.qty, rowY, { width: 40, align: 'center' });
+            .text(item.qty || 1, cols.qty, currentY, { width: 40, align: 'center' });
             
         if (item.unitPrice !== undefined && !item.hidePrice) {
-            doc.text(formatLKR(item.unitPrice), cols.price, rowY, { width: 80, align: 'right' });
+            doc.text(formatLKR(item.unitPrice), cols.price, currentY, { width: 80, align: 'right' });
             
             if (item.discount > 0) {
-                doc.font('Helvetica-Bold').text(`${item.discount}%`, cols.disc, rowY, { width: 70, align: 'right' })
+                doc.font('Helvetica-Bold').text(`${item.discount}%`, cols.disc, currentY, { width: 70, align: 'right' })
                    .font('Helvetica').fontSize(8).fillColor('#E85D75').text(`-${formatLKR(lineDiscount)}`, cols.disc, doc.y + 2, { width: 70, align: 'right' });
             } else {
-                doc.fillColor('#94A3B8').text('-', cols.disc, rowY, { width: 70, align: 'right' });
+                doc.fillColor('#94A3B8').text('-', cols.disc, currentY, { width: 70, align: 'right' });
             }
             maxY = Math.max(maxY, doc.y);
 
-            doc.fillColor('#000').fontSize(10).font('Helvetica-Bold').text(formatLKR(net), cols.total, rowY, { width: 100, align: 'right' });
+            doc.fillColor('#000').fontSize(10).font('Helvetica-Bold').text(formatLKR(net), cols.total, currentY, { width: 100, align: 'right' });
         }
 
-        rowY = Math.max(maxY, rowY + 20) + 10;
-
-        // Horizontal line between items if needed, or just padding
-        doc.moveTo(40, rowY - 5).lineTo(doc.page.width - 40, rowY - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
+        doc.y = Math.max(maxY, currentY + 20) + 10;
+        doc.moveTo(40, doc.y - 5).lineTo(doc.page.width - 40, doc.y - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
     });
-
-    doc.y = rowY;
 }
 
-function buildDeliveryItemsTable(doc, items) {
+
+function buildDeliveryItemsTable(doc, items, headerData) {
     const cols = { hash: 40, desc: 65, qty: 450 };
+    headerData.tableCols = cols;
     const y = doc.y;
 
     // Table Header
@@ -135,30 +181,30 @@ function buildDeliveryItemsTable(doc, items) {
         .text('DESCRIPTION', cols.desc, y + 7)
         .text('QTY', cols.qty, y + 7, { width: 60, align: 'center' });
 
-    let rowY = y + 22;
-    doc.moveTo(40, rowY).lineTo(doc.page.width - 40, rowY).strokeColor('#1B2A4A').lineWidth(1).stroke();
-    rowY += 10;
+    doc.moveTo(40, y + 22).lineTo(doc.page.width - 40, y + 22).strokeColor('#1B2A4A').lineWidth(1).stroke();
+    doc.y = y + 32;
 
     items.forEach((item, i) => {
+        checkPageBreak(doc, 40, headerData);
+        const currentY = doc.y;
+
         doc.fillColor('#000').font('Helvetica').fontSize(10)
-            .text(i + 1, cols.hash + 5, rowY)
-            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, rowY, { width: 350 });
+            .text(i + 1, cols.hash + 5, currentY)
+            .font('Helvetica-Bold').text(cleanText(item.name), cols.desc, currentY, { width: 350 });
 
         if (item.description || item.customization) {
             doc.font('Helvetica').fontSize(8).fillColor('#666').text(cleanText(item.description || item.customization), cols.desc, doc.y + 2, { width: 350 });
         }
 
-        const currentY = doc.y;
+        const maxY = doc.y;
         doc.fillColor('#000').font('Helvetica').fontSize(10)
-            .text(item.qty || 1, cols.qty, rowY, { width: 60, align: 'center' });
+            .text(item.qty || 1, cols.qty, currentY, { width: 60, align: 'center' });
 
-        rowY = Math.max(currentY, rowY + 20) + 10;
-
-        doc.moveTo(40, rowY - 5).lineTo(doc.page.width - 40, rowY - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
+        doc.y = Math.max(maxY, currentY + 20) + 10;
+        doc.moveTo(40, doc.y - 5).lineTo(doc.page.width - 40, doc.y - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
     });
-
-    doc.y = rowY;
 }
+
 
 function buildTotalsBox(doc, data, balanceOnly = false) {
     const x = doc.page.width - 260;
@@ -226,6 +272,8 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
         doc.pipe(res);
 
         const dateStr = new Date(quotation.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        const headerData = { title: 'QUOTATION', number: quotation.qNumber, date: dateStr };
+        
         buildHeader(doc, 'QUOTATION', quotation.qNumber, dateStr);
         buildCustomerBox(doc, quotation.customer, quotation.qNumber, dateStr, 'Quotation');
 
@@ -234,14 +282,18 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
                 .text(`Valid until: ${new Date(quotation.validUntil).toLocaleDateString('en-GB')}`, { align: 'right' });
         }
 
-        buildItemsTable(doc, quotation.items);
+        buildItemsTable(doc, quotation.items, headerData);
+        
+        checkPageBreak(doc, 150, headerData);
         buildTotalsBox(doc, quotation);
 
         if (quotation.notes) {
+            checkPageBreak(doc, 50, headerData);
             doc.moveDown().fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(quotation.notes));
         }
         buildFooter(doc, false);
+
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -258,6 +310,8 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
         doc.pipe(res);
 
         const dateStr = new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        const headerData = { title: 'PROFORMA INVOICE', number: order.orderNumber, date: dateStr };
+        
         buildHeader(doc, 'PROFORMA INVOICE', order.orderNumber, dateStr);
         buildCustomerBox(doc, order.customer, order.orderNumber, dateStr, 'Order');
         
@@ -267,14 +321,18 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
             doc.y += 10;
         }
 
-        buildItemsTable(doc, order.items);
+        buildItemsTable(doc, order.items, headerData);
+        
+        checkPageBreak(doc, 150, headerData);
         buildTotalsBox(doc, order);
 
         if (order.notes) {
+            checkPageBreak(doc, 50, headerData);
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(order.notes));
         }
         buildFooter(doc, true);
+
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -291,25 +349,30 @@ router.get('/delivery/:id', requireAdminAuth, async (req, res) => {
         doc.pipe(res);
 
         const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+        const headerData = { title: 'DELIVERY NOTE', number: order.orderNumber, date: dateStr };
+        
         buildHeader(doc, 'DELIVERY NOTE', order.orderNumber, dateStr);
         buildCustomerBox(doc, order.customer, order.orderNumber, dateStr, 'Order');
 
-        buildDeliveryItemsTable(doc, order.items);
+        buildDeliveryItemsTable(doc, order.items, headerData);
 
         if (order.notes) {
+            checkPageBreak(doc, 50, headerData);
             doc.y += 20;
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(order.notes));
         }
         
         // Delivery Signature Area
-        const y = doc.y > doc.page.height - 150 ? doc.y : doc.page.height - 150;
-        doc.moveTo(40, y).lineTo(200, y).strokeColor('#000').stroke();
-        doc.moveTo(doc.page.width - 200, y).lineTo(doc.page.width - 40, y).strokeColor('#000').stroke();
+        checkPageBreak(doc, 150, headerData);
+        const sigY = doc.y;
+        doc.moveTo(40, sigY).lineTo(200, sigY).strokeColor('#000').stroke();
+        doc.moveTo(doc.page.width - 200, sigY).lineTo(doc.page.width - 40, sigY).strokeColor('#000').stroke();
         
         doc.font('Helvetica').fontSize(8)
-            .text('RECEIVED BY (SIGNATURE)', 40, y + 5, { width: 160, align: 'center' })
-            .text('DATE', doc.page.width - 200, y + 5, { width: 160, align: 'center' });
+            .text('RECEIVED BY (SIGNATURE)', 40, sigY + 5, { width: 160, align: 'center' })
+            .text('DATE', doc.page.width - 200, sigY + 5, { width: 160, align: 'center' });
+
 
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }
