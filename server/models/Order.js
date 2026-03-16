@@ -3,8 +3,10 @@ const mongoose = require('mongoose');
 const orderItemSchema = new mongoose.Schema({
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
     name: { type: String, required: true },
+    description: { type: String, default: '' },
     qty: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true, min: 0 },
+    discount: { type: Number, default: 0 }, // percentage
     customization: { type: String, default: '' },
 }, { _id: false });
 
@@ -30,9 +32,13 @@ const orderSchema = new mongoose.Schema({
     },
     items: [orderItemSchema],
     subtotal: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
     deliveryCharge: { type: Number, default: 0 },
+    tax: { type: Number, default: 0 },               // percentage
+    taxAmount: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
     notes: { type: String, default: '' },
+    description: { type: String, default: '' },
     adminNotes: { type: String, default: '' },
     orderStatus: {
         type: String,

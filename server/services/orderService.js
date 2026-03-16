@@ -36,15 +36,17 @@ const generateInvoiceForOrder = async (order, admin) => {
         items: order.items.map(i => ({
             productId: i.productId,
             name: i.name,
+            description: i.description,
             qty: i.qty,
             unitPrice: i.unitPrice,
-            discount: 0 // Orders might not have line-level discounts yet, adjust if needed
+            discount: i.discount || 0
         })),
         subtotal: order.subtotal,
         deliveryCharge: order.deliveryCharge,
         total: order.total,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
         notes: order.notes,
+        description: order.description,
         createdBy: admin?._id || null,
     });
 

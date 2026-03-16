@@ -250,6 +250,12 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
         const dateStr = new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
         buildHeader(doc, 'PROFORMA INVOICE', order.orderNumber, dateStr);
         buildCustomerBox(doc, order.customer, order.orderNumber, dateStr, 'Order');
+        
+        if (order.description) {
+            doc.moveDown();
+            doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(12).text(cleanText(order.description).toUpperCase(), 40);
+            doc.y += 10;
+        }
 
         buildItemsTable(doc, order.items);
         buildTotalsBox(doc, order);
