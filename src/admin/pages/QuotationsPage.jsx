@@ -171,8 +171,14 @@ function QuotationForm({ onSave, token, initialData = null }) {
                                     <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Product</span>
                                     <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
                                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
-                                    <input placeholder="Notes or Custom Description" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
-                                        className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
+                                    <textarea placeholder="Notes or Custom Description" value={item.description} 
+                                        onChange={e => {
+                                            updateItem(idx, 'description', e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = e.target.scrollHeight + 'px';
+                                        }}
+                                        ref={el => { if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} rows={1}
+                                        className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow resize-none overflow-hidden" />
                                 </div>
 
                                 <div className="w-full relative h-full flex items-start">
@@ -476,7 +482,7 @@ export default function QuotationsPage() {
     };
 
     if (view === 'view') return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
             <QuotationView
                 data={editingQuotation}
                 onBack={() => { setView('list'); setEditingQuotation(null); }}
@@ -485,7 +491,7 @@ export default function QuotationsPage() {
     );
 
     if (view === 'new' || view === 'edit') return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
                 <button onClick={() => { setView('list'); setEditingQuotation(null); }} className="text-slate-400 hover:text-[#1B2A4A]">← Back</button>
                 <h2 className="font-bold text-[#1B2A4A] text-lg">{view === 'edit' ? 'Edit Quotation' : 'New Quotation'}</h2>
