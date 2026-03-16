@@ -264,12 +264,13 @@ function buildFooter(doc, headerData, showPayment = true) {
     }
 
     // Signature Area
-    const sigY = y + 100;
+    const sigY = y + 80; // Reduced from y + 100
     doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(12).text('For, ONE FINE', 0, sigY, { align: 'right', width: doc.page.width - 40 });
 
-    doc.moveTo(doc.page.width - 180, sigY + 60).lineTo(doc.page.width - 40, sigY + 60).strokeColor('#000').stroke();
-    doc.font('Helvetica').fontSize(8).text('AUTHORIZED SIGNATURE', doc.page.width - 180, sigY + 65, { width: 140, align: 'center' });
+    doc.moveTo(doc.page.width - 180, sigY + 50).lineTo(doc.page.width - 40, sigY + 50).strokeColor('#000').stroke(); // Reduced from sigY + 60
+    doc.font('Helvetica').fontSize(8).text('AUTHORIZED SIGNATURE', doc.page.width - 180, sigY + 55, { width: 140, align: 'center' }); // Reduced from sigY + 65
 }
+
 
 
 // GET /api/pdf/quotation/:id
