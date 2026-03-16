@@ -38,6 +38,7 @@ const orderSchema = new mongoose.Schema({
     taxAmount: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
     notes: { type: String, default: '' },
+    description: { type: String, default: '' },
     adminNotes: { type: String, default: '' },
     orderStatus: {
         type: String,

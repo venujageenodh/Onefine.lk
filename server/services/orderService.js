@@ -46,6 +46,7 @@ const generateInvoiceForOrder = async (order, admin) => {
         total: order.total,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
         notes: order.notes,
+        description: order.description,
         createdBy: admin?._id || null,
     });
 

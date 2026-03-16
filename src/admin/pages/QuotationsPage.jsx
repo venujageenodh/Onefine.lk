@@ -31,6 +31,7 @@ function QuotationForm({ onSave, token, initialData = null }) {
         deliveryCharge: initialData?.deliveryCharge || 0,
         tax: initialData?.tax || 0,
         notes: initialData?.notes || '',
+        description: initialData?.description || '',
         validUntil: initialData?.validUntil ? new Date(initialData.validUntil).toISOString().split('T')[0] : ''
     });
     const [saving, setSaving] = useState(false);
@@ -90,6 +91,7 @@ function QuotationForm({ onSave, token, initialData = null }) {
                     discountAmount: Number(extra.discountAmount), 
                     deliveryCharge: Number(extra.deliveryCharge), 
                     tax: Number(extra.tax),
+                    description: extra.description,
                 })
             }, token);
             onSave();
@@ -139,6 +141,12 @@ function QuotationForm({ onSave, token, initialData = null }) {
                                 className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
                         </div>
                     </div>
+                </div>
+                <div className="mt-8 px-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Quotation Subject / Description</label>
+                    <input value={extra.description} onChange={e => setExtra({...extra, description: e.target.value})}
+                        placeholder="e.g. Standard Corporate Gifts for Year-End Event"
+                        className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
                 </div>
             </section>
 

@@ -84,7 +84,7 @@ router.post('/', async (req, res) => {
 router.post('/admin', requireAdminAuth, requirePermission('orders.edit'), async (req, res) => {
     try {
         const { 
-            customer, items, deliveryCharge = 0, notes, paymentMethod, orderStatus = 'CONFIRMED',
+            customer, items, deliveryCharge = 0, notes, description = '', paymentMethod, orderStatus = 'CONFIRMED',
             tax = 0, discountAmount = 0
         } = req.body;
         
@@ -114,6 +114,7 @@ router.post('/admin', requireAdminAuth, requirePermission('orders.edit'), async 
             taxAmount,
             total,
             notes,
+            description,
             orderStatus,
             paymentStatus: 'UNPAID',
             paymentMethod: paymentMethod || 'CASH',
@@ -192,7 +193,7 @@ router.put('/:id', requireAdminAuth, requirePermission('orders.edit'), async (re
     try {
         const { 
             assignedAdminId, adminNotes, paymentStatus, paymentMethod, 
-            deliveryCharge, customer, items, notes, orderStatus 
+            deliveryCharge, discountAmount, tax, customer, items, notes, description, orderStatus 
         } = req.body;
         
         const order = await Order.findById(req.params.id);
@@ -201,6 +202,7 @@ router.put('/:id', requireAdminAuth, requirePermission('orders.edit'), async (re
         if (assignedAdminId !== undefined) order.assignedAdminId = assignedAdminId;
         if (adminNotes !== undefined) order.adminNotes = adminNotes;
         if (notes !== undefined) order.notes = notes;
+        if (description !== undefined) order.description = description;
         if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
         if (paymentMethod !== undefined) order.paymentMethod = paymentMethod;
         if (orderStatus !== undefined) order.orderStatus = orderStatus;

@@ -37,6 +37,7 @@ const invoiceSchema = new mongoose.Schema({
     },
     dueDate: { type: Date },
     notes: { type: String, default: '' },
+    description: { type: String, default: '' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'AdminUser', default: null },
 }, { timestamps: true });
 

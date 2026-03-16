@@ -99,6 +99,7 @@ router.post('/:id/convert', requireAdminAuth, requirePermission('quotations.edit
             deliveryCharge: quotation.deliveryCharge,
             total: quotation.total,
             notes: quotation.notes,
+            description: quotation.description,
             quotationId: quotation._id,
             orderStatus: 'CONFIRMED'
         });

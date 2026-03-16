@@ -371,7 +371,8 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
         discountAmount: initialData?.discountAmount || 0,
         deliveryCharge: initialData?.deliveryCharge || 350,
         tax: initialData?.tax || 0,
-        notes: initialData?.notes || ''
+        notes: initialData?.notes || '',
+        description: initialData?.description || ''
     });
 
     const [saving, setSaving] = useState(false);
@@ -427,7 +428,8 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
                     discountAmount: Number(extra.discountAmount),
                     deliveryCharge: Number(extra.deliveryCharge),
                     tax: Number(extra.tax),
-                    adminNotes: extra.notes 
+                    adminNotes: extra.notes,
+                    description: extra.description 
                 })
             }, token);
             onSuccess();
@@ -477,6 +479,12 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
                                 <textarea rows="4" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})}
                                     className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A] resize-none h-[116px]" />
                             </div>
+                        </div>
+                        <div className="mt-6">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Proforma Description / Subject</label>
+                            <input value={extra.description} onChange={e => setExtra({...extra, description: e.target.value})}
+                                placeholder="e.g. Corporate Gifting Order for Q3 Marketing Campaign"
+                                className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
                         </div>
                     </section>
 
