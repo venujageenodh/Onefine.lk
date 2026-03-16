@@ -128,8 +128,10 @@ function buildItemsTable(doc, items, headerData) {
     doc.y = y + 32;
 
     items.forEach((item, i) => {
-        // Estimated height for one item line (roughly 40-60 units depending on description)
-        checkPageBreak(doc, 50, headerData);
+        const isLastItem = i === items.length - 1;
+        // Estimated height for one item line plus totals box and footer if it's the last item
+        const heightNeeded = isLastItem ? 450 : 60;
+        checkPageBreak(doc, heightNeeded, headerData);
         
         const currentY = doc.y;
         const lineTotal = (item.unitPrice || 0) * (item.qty || 0);
@@ -185,7 +187,10 @@ function buildDeliveryItemsTable(doc, items, headerData) {
     doc.y = y + 32;
 
     items.forEach((item, i) => {
-        checkPageBreak(doc, 40, headerData);
+        const isLastItem = i === items.length - 1;
+        // Delivery note has a smaller footer (signature only)
+        const heightNeeded = isLastItem ? 250 : 50;
+        checkPageBreak(doc, heightNeeded, headerData);
         const currentY = doc.y;
 
         doc.fillColor('#000').font('Helvetica').fontSize(10)
@@ -297,15 +302,16 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
 
         buildItemsTable(doc, quotation.items, headerData);
         
-        checkPageBreak(doc, 150, headerData);
         buildTotalsBox(doc, quotation);
 
         if (quotation.notes) {
-            checkPageBreak(doc, 50, headerData);
+            // Check if notes fit, otherwise move to next page with header
+            checkPageBreak(doc, 80, headerData);
             doc.moveDown().fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(quotation.notes));
         }
         buildFooter(doc, headerData, false);
+
 
 
         doc.end();
@@ -337,15 +343,15 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
 
         buildItemsTable(doc, order.items, headerData);
         
-        checkPageBreak(doc, 150, headerData);
         buildTotalsBox(doc, order);
 
         if (order.notes) {
-            checkPageBreak(doc, 50, headerData);
+            checkPageBreak(doc, 80, headerData);
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(order.notes));
         }
         buildFooter(doc, headerData, true);
+
 
 
         doc.end();
@@ -372,14 +378,14 @@ router.get('/delivery/:id', requireAdminAuth, async (req, res) => {
         buildDeliveryItemsTable(doc, order.items, headerData);
 
         if (order.notes) {
-            checkPageBreak(doc, 50, headerData);
-            doc.y += 20;
+            checkPageBreak(doc, 80, headerData);
+            doc.y += 10;
             doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
                 .font('Helvetica').text(cleanText(order.notes));
         }
         
         // Delivery Signature Area
-        checkPageBreak(doc, 150, headerData);
+
         const sigY = doc.y;
         doc.moveTo(40, sigY).lineTo(200, sigY).strokeColor('#000').stroke();
         doc.moveTo(doc.page.width - 200, sigY).lineTo(doc.page.width - 40, sigY).strokeColor('#000').stroke();
