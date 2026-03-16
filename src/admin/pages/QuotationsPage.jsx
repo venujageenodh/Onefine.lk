@@ -164,43 +164,14 @@ function QuotationForm({ onSave, token, initialData = null }) {
                         </button>
                     </div>
 
-                <div className="space-y-3">
-                    {items.map((item, idx) => {
-                        const rowTotal = item.qty * item.unitPrice * (1 - (item.discount || 0) / 100);
-                        return (
-                            <div key={idx} className="group flex flex-col sm:grid sm:grid-cols-[1fr_80px_110px_80px_110px_40px] gap-3 items-start sm:items-center bg-white p-3 sm:p-2 sm:bg-transparent rounded-xl shadow-sm sm:shadow-none border border-slate-100 sm:border-transparent transition-all hover:bg-white hover:shadow-sm hover:border-slate-100">
-
-                                <div className="w-full relative flex flex-col gap-2">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Product</span>
-                                    <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow" />
-                                    <textarea placeholder="Notes or Custom Description" value={item.description} 
-                                        onChange={e => {
-                                            updateItem(idx, 'description', e.target.value);
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = e.target.scrollHeight + 'px';
-                                        }}
-                                        ref={el => { if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} rows={1}
-                                        className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow resize-none overflow-hidden" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Qty</span>
-                                    <input type="number" placeholder="Qty" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)} required
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center mt-0 sm:mt-1" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Price</span>
-                                    <input type="number" placeholder="Unit Price" min="0" value={item.unitPrice} onChange={e => updateItem(idx, 'unitPrice', e.target.value)} required
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-right mt-0 sm:mt-1" />
-                                </div>
-
-                                <div className="w-full relative h-full flex items-start">
-                                    <span className="sm:hidden text-[10px] font-bold text-slate-400 uppercase absolute -top-2 left-2 bg-white px-1">Disc%</span>
-                                    <input type="number" placeholder="Disc%" min="0" max="100" value={item.discount} onChange={e => updateItem(idx, 'discount', e.target.value)}
-                                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C] focus:ring-1 focus:ring-[#C9A84C]/30 transition-shadow sm:text-center mt-0 sm:mt-1" />
-                                </div>
+                    <div className="hidden md:grid grid-cols-[1fr_80px_120px_100px_120px_40px] gap-4 mb-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        <div>Product Description</div>
+                        <div className="text-center">Quantity</div>
+                        <div className="text-right">Price (LKR)</div>
+                        <div className="text-center">Discount %</div>
+                        <div className="text-right">Total (LKR)</div>
+                        <div></div>
+                    </div>
 
                     <div className="space-y-4">
                         {items.map((item, idx) => {
@@ -210,8 +181,14 @@ function QuotationForm({ onSave, token, initialData = null }) {
                                     <div className="w-full relative flex flex-col gap-2">
                                         <input placeholder="e.g. Premium Gift Box" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
                                             className="w-full rounded-xl border border-slate-100 px-4 py-2.5 text-xs outline-none focus:border-[#C9A84C] bg-slate-50 transition-all font-bold text-[#1B2A4A]" />
-                                        <input placeholder="Notes or Custom Description" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
-                                            className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[10px] outline-none focus:bg-white focus:border-slate-100 transition-all" />
+                                        <textarea placeholder="Notes or Custom Description" value={item.description}
+                                            onChange={e => {
+                                                updateItem(idx, 'description', e.target.value);
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = e.target.scrollHeight + 'px';
+                                            }}
+                                            ref={el => { if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} rows={1}
+                                            className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[10px] outline-none focus:bg-white focus:border-slate-100 transition-all resize-none overflow-hidden" />
                                     </div>
                                     <input type="number" min="1" value={item.qty} onChange={e => updateItem(idx, 'qty', e.target.value)}
                                         className="w-full rounded-xl border border-slate-100 px-3 py-2.5 text-sm outline-none focus:border-[#C9A84C] bg-white transition-all font-bold text-center text-[#1B2A4A]" />
