@@ -234,7 +234,7 @@ export default function App() {
 
                   <div className="flex flex-col sm:flex-row md:flex-wrap items-center gap-4 w-full">
                     <a
-                      href="/luxgear-bottles"
+                      href="/collection?slug=luxgear-bottle"
                       className="inline-flex w-full sm:w-auto h-[52px] md:h-auto items-center justify-center rounded-lg bg-gold px-8 py-3 text-sm font-bold text-navy shadow-soft transition-all hover:translate-y-[-2px] hover:shadow-lg hover:bg-gold-soft active:translate-y-0"
                     >
                       Shop Now

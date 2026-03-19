@@ -404,24 +404,22 @@ app.delete('/api/collections/:id', requireAuth, async (req, res) => {
 // POST /api/orders  (public – create a new order)
 app.post('/api/orders', async (req, res) => {
   try {
-    const {
-      customerName, customerPhone, customerAddress, customerCity,
-      customerNotes, items, subtotal, deliveryCharge, total, paymentMethod,
-    } = req.body;
+    const { customer, items, notes, subtotal, deliveryCharge, total, paymentMethod } = req.body;
 
-    if (!customerName || !customerPhone || !customerAddress || !customerCity || !items || !items.length) {
+    if (!customer || !customer.name || !customer.phone || !customer.address || !customer.city || !items || !items.length) {
       return res.status(400).json({ error: 'Missing required order fields' });
     }
 
     const order = await Order.create({
-      customerName, customerPhone, customerAddress, customerCity,
-      customerNotes: customerNotes || '',
+      source: 'WEBSITE',
+      customer,
+      notes: notes || '',
       items,
       subtotal: Number(subtotal),
       deliveryCharge: Number(deliveryCharge ?? 350),
       total: Number(total),
-      paymentMethod,
-      paymentStatus: paymentMethod === 'cod' ? 'Pending' : 'Pending',
+      paymentMethod: paymentMethod || '',
+      paymentStatus: 'UNPAID',
     });
 
     res.status(201).json({ success: true, orderId: order._id, order });
@@ -479,9 +477,8 @@ app.post('/api/payhere/notify', async (req, res) => {
     console.log('💳 PayHere Notify:', { order_id, status_code });
 
     // status_code: 2 = Success, 0 = Pending, -1 = Cancelled, -2 = Failed, -3 = Charged-Back
-    let paymentStatus = 'Pending';
-    if (status_code === '2') paymentStatus = 'Paid';
-    else if (status_code === '-1' || status_code === '-2') paymentStatus = 'Failed';
+    let paymentStatus = 'UNPAID';
+    if (status_code === '2') paymentStatus = 'PAID';
 
     if (order_id) {
       await Order.findByIdAndUpdate(order_id, { paymentStatus });

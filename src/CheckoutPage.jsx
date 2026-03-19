@@ -51,18 +51,33 @@ export default function CheckoutPage() {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const buildOrderPayload = () => ({
-        customerName: form.name,
-        customerPhone: form.phone,
-        customerAddress: form.address,
-        customerCity: form.city,
-        customerNotes: form.notes,
-        items: [{ productId, name: productName, price: productPrice, quantity: qty, image: productImage }],
-        subtotal,
-        deliveryCharge: DELIVERY_CHARGE,
-        total: orderTotal,
-        paymentMethod: method,
-    });
+    const buildOrderPayload = () => {
+        let mappedMethod = '';
+        if (method === 'payhere') mappedMethod = 'PAYHERE';
+        else if (method === 'cod') mappedMethod = 'COD';
+        else if (method === 'bank_transfer') mappedMethod = 'BANK';
+
+        return {
+            customer: {
+                name: form.name,
+                phone: form.phone,
+                address: form.address,
+                city: form.city,
+            },
+            notes: form.notes,
+            items: [{ 
+                productId: productId || null, 
+                name: productName, 
+                unitPrice: numericPrice, 
+                qty: qty, 
+                image: productImage 
+            }],
+            subtotal,
+            deliveryCharge: DELIVERY_CHARGE,
+            total: orderTotal,
+            paymentMethod: mappedMethod,
+        };
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();

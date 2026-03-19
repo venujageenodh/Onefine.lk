@@ -1,10 +1,22 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-    const [items, setItems] = useState([]); // { id, name, price, image, qty }
+    const [items, setItems] = useState(() => {
+        try {
+            const saved = localStorage.getItem('cartItems');
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            console.error('Failed to parse cart items from local storage', error);
+            return [];
+        }
+    });
     const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('cartItems', JSON.stringify(items));
+    }, [items]);
 
     const addToCart = useCallback((product) => {
         setItems((prev) => {
@@ -38,17 +50,22 @@ export function CartProvider({ children }) {
     const buildWhatsAppMessage = useCallback(() => {
         if (items.length === 0) return '';
         const lines = items.map(
-            (i) => `• ${i.name} x${i.qty} @ ${i.price}`
+            (i) => `📦 *Product:* ${i.name}\n💰 *Price:* ${i.price}\n🔢 *Quantity:* ${i.qty}` +
+                (i.id ? `\n🔗 *Link:* ${window.location.origin}/product/${i.id}` : '')
         );
-        const msg = [
-            '🛍️ *New Order from OneFine.lk*',
-            '',
-            ...lines,
-            '',
-            `*Total: Rs. ${totalPrice.toLocaleString('en-LK')}*`,
-            '',
-            'Please confirm my order. Thank you!',
-        ].join('\n');
+        const productsText = lines.join('\n\n');
+        
+        const msg = `🛍️ *NEW ORDER REQUEST - ONEFINE* 🛍️\n\n` +
+            `Hello! I'm interested in purchasing ${items.length === 1 ? 'this item' : 'these items'}:\n\n` +
+            `${productsText}\n\n` +
+            `🛒 *Total Price:* Rs. ${totalPrice.toLocaleString('en-LK')}\n\n` +
+            `*📍 My Delivery Details:*\n` +
+            `👤 Name: \n` +
+            `🏠 Address: \n` +
+            `📱 Phone: \n` +
+            `\n` +
+            `_Please let me know the next steps to confirm my order!_ ✨`;
+
         return `https://wa.me/94768121701?text=${encodeURIComponent(msg)}`;
     }, [items, totalPrice]);
 
