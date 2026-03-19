@@ -13,6 +13,12 @@ import ProformaInvoicesPage from './pages/ProformaInvoicesPage';
 import DeliveryNotesPage from './pages/DeliveryNotesPage';
 import ExpensesPage from './pages/ExpensesPage';
 import CustomerProfilePage from './pages/CustomerProfilePage';
+import FinanceDashboardPage from './pages/FinanceDashboardPage';
+import TransactionsPage from './pages/TransactionsPage';
+import AccountsPage from './pages/AccountsPage';
+import AssetsPage from './pages/AssetsPage';
+import LiabilitiesPage from './pages/LiabilitiesPage';
+import ReportsPage from './pages/ReportsPage';
 import logo from '../assets/onefine-logo.png';
 
 const NAV = [
@@ -27,6 +33,12 @@ const NAV = [
     { key: 'products', label: 'Products', icon: '🏷️', perm: 'products.view' },
     { key: 'suppliers', label: 'Suppliers', icon: '🏢', perm: 'suppliers.view' },
     { key: 'expenses', label: 'Expenses', icon: '💸', perm: 'expenses.view' },
+    { key: 'finance', label: 'Finance Overview', icon: '📊', perm: 'finance.view' },
+    { key: 'transactions', label: 'Transactions', icon: '💹', perm: 'finance.view' },
+    { key: 'accounts', label: 'Accounts', icon: '🏦', perm: 'finance.view' },
+    { key: 'assets', label: 'Assets', icon: '📦', perm: 'finance.view' },
+    { key: 'liabilities', label: 'Liabilities', icon: '⚖️', perm: 'finance.view' },
+    { key: 'reports', label: 'Financial Reports', icon: '📋', perm: 'finance.view' },
     { key: 'admins', label: 'Admin Users', icon: '👤', perm: '__owner__' },
 ];
 
@@ -43,6 +55,12 @@ const PAGES = {
     proforma: ProformaInvoicesPage,
     'delivery-notes': DeliveryNotesPage,
     expenses: ExpensesPage,
+    finance: FinanceDashboardPage,
+    transactions: TransactionsPage,
+    accounts: AccountsPage,
+    assets: AssetsPage,
+    liabilities: LiabilitiesPage,
+    reports: ReportsPage,
 };
 
 export default function AdminApp() {
@@ -77,20 +95,35 @@ export default function AdminApp() {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-                    {allowedNav.map(n => (
-                        <button
-                            key={n.key}
-                            onClick={() => { setPage(n.key); setSidebarOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all text-left
-                ${page === n.key
-                                    ? 'bg-[#C9A84C] text-[#1B2A4A] font-bold'
-                                    : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-                        >
-                            <span className="text-base">{n.icon}</span>
-                            {n.label}
-                        </button>
-                    ))}
+                <nav className="flex-1 px-3 py-4 overflow-y-auto">
+                    {(() => {
+                        const financeKeys = ['finance', 'transactions', 'accounts', 'assets', 'liabilities', 'reports'];
+                        let financeDividerShown = false;
+                        return allowedNav.map(n => {
+                            const isFinance = financeKeys.includes(n.key);
+                            const showDivider = isFinance && !financeDividerShown;
+                            if (showDivider) financeDividerShown = true;
+                            return (
+                                <React.Fragment key={n.key}>
+                                    {showDivider && (
+                                        <div className="mx-2 my-3 pt-3 border-t border-white/10">
+                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] px-2 mb-2">Finance & Accounting</p>
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => { setPage(n.key); setSidebarOpen(false); }}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all text-left mb-0.5
+                                            ${page === n.key
+                                                ? 'bg-[#C9A84C] text-[#1B2A4A] font-bold'
+                                                : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
+                                    >
+                                        <span className="text-base">{n.icon}</span>
+                                        {n.label}
+                                    </button>
+                                </React.Fragment>
+                            );
+                        });
+                    })()}
                 </nav>
 
                 {/* Admin info + logout */}

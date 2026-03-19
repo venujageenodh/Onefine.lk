@@ -7,7 +7,7 @@ export default function InventoryPage() {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(null);
-    const [stockInForm, setStockInForm] = useState({ productId: '', qty: '', supplierId: '', reason: '', unitCost: '' });
+    const [stockInForm, setStockInForm] = useState({ productId: '', qty: '', supplierId: '', reason: '', unitCost: '', recordExpense: false });
     const [suppliers, setSuppliers] = useState([]);
     const [saving, setSaving] = useState(false);
     const [tab, setTab] = useState('all'); // all | low
@@ -43,7 +43,7 @@ export default function InventoryPage() {
                     ...stockInForm, qty: Number(stockInForm.qty), unitCost: stockInForm.unitCost ? Number(stockInForm.unitCost) : undefined
                 })
             }, token);
-            setStockInForm({ productId: '', qty: '', supplierId: '', reason: '', unitCost: '' });
+            setStockInForm({ productId: '', qty: '', supplierId: '', reason: '', unitCost: '', recordExpense: false });
             fetch();
         } catch (e) { alert(e.message); } finally { setSaving(false); }
     };
@@ -177,6 +177,11 @@ export default function InventoryPage() {
                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">Reason / Note</label>
                                 <input value={stockInForm.reason} onChange={e => setStockInForm(f => ({ ...f, reason: e.target.value }))}
                                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#C9A84C]" placeholder="e.g. Restock from supplier" />
+                            </div>
+                            <div className="flex items-center gap-2 pt-2 px-1">
+                                <input type="checkbox" id="recordExpense" checked={stockInForm.recordExpense} onChange={e => setStockInForm(f => ({ ...f, recordExpense: e.target.checked }))}
+                                    className="h-4 w-4 rounded border-slate-300 text-[#C9A84C] focus:ring-[#C9A84C]" />
+                                <label htmlFor="recordExpense" className="text-xs font-bold text-slate-600 cursor-pointer">Record as Business Expense</label>
                             </div>
                             <button type="submit" disabled={saving}
                                 className="w-full rounded-full bg-[#C9A84C] py-2.5 text-sm font-bold text-[#1B2A4A] disabled:opacity-60">

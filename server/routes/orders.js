@@ -6,6 +6,32 @@ const { adjustStock } = require('./inventory');
 const { logAction } = require('../utils/logger');
 const { deductStockForOrder, generateInvoiceForOrder } = require('../services/orderService');
 const { syncCustomerFromOrder } = require('../services/customerService');
+const Transaction = require('../models/Transaction');
+const { updateAccountBalance } = require('./transactions');
+
+// Helper — auto-record income when an order is paid
+async function recordOrderIncome(order, admin) {
+    try {
+        const existing = await Transaction.findOne({ sourceType: 'order', sourceId: order._id, type: 'income' });
+        if (existing) return; // already recorded
+        const tx = new Transaction({
+            type: 'income',
+            category: 'sales',
+            amount: order.total,
+            paymentMethod: order.paymentMethod?.toLowerCase() === 'bank' ? 'bank' : 'cash',
+            accountType: order.paymentMethod?.toLowerCase() === 'bank' ? 'bank' : 'cash',
+            date: new Date(),
+            note: `Sale income from Order ${order.orderNumber}`,
+            sourceType: 'order',
+            sourceId: order._id,
+            recordedBy: admin ? { adminId: admin._id, adminName: admin.name } : {},
+        });
+        await tx.save();
+        await updateAccountBalance(tx.accountType, tx.amount, 'income');
+    } catch (e) {
+        console.error('⚠️ Failed to auto-record order income:', e.message);
+    }
+}
 
 // GET /api/orders
 router.get('/', requireAdminAuth, requirePermission('orders.view'), async (req, res) => {
@@ -203,7 +229,13 @@ router.put('/:id', requireAdminAuth, requirePermission('orders.edit'), async (re
         if (adminNotes !== undefined) order.adminNotes = adminNotes;
         if (notes !== undefined) order.notes = notes;
         if (description !== undefined) order.description = description;
-        if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
+        if (paymentStatus !== undefined) {
+            order.paymentStatus = paymentStatus;
+            // Auto-record income when payment is confirmed
+            if (paymentStatus === 'PAID') {
+                await recordOrderIncome(order, req.admin);
+            }
+        }
         if (paymentMethod !== undefined) order.paymentMethod = paymentMethod;
         if (orderStatus !== undefined) order.orderStatus = orderStatus;
         

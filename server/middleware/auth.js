@@ -12,6 +12,7 @@ const ROLE_PERMISSIONS = {
         'quotations.view', 'quotations.edit', 'quotations.create',
         'invoices.view', 'dashboard.view',
         'proforma.view', 'delivery.view',
+        'finance.view',
     ],
     INVENTORY_ADMIN: [
         'products.view', 'products.edit', 'products.create',
@@ -24,6 +25,7 @@ const ROLE_PERMISSIONS = {
         'payments.view', 'payments.create',
         'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete',
         'dashboard.view', 'proforma.view', 'delivery.view',
+        'finance.view', 'finance.create', 'finance.edit', 'finance.delete',
     ],
 };
 

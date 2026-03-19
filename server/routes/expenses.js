@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Expense = require('../models/Expense');
+const Transaction = require('../models/Transaction');
+const { updateAccountBalance } = require('./transactions');
 const { requireAdminAuth, requirePermission } = require('../middleware/auth');
 
 // GET /api/expenses
@@ -36,12 +38,37 @@ router.post('/', requireAdminAuth, requirePermission('expenses.create'), async (
         const expense = new Expense({
              title, description, amount, category, date, receiptImage,
              addedBy: {
-                 adminId: req.admin.id,
+                 adminId: req.admin._id,
                  adminName: req.admin.name
              }
         });
         
         await expense.save();
+
+        // Mirror as a Transaction for unified P&L tracking
+        try {
+            const catMap = {
+                'Office': 'other_expense', 'Raw Materials': 'purchase', 'Marketing': 'other_expense',
+                'Utilities': 'utilities', 'Salary': 'salary', 'Logistics': 'purchase', 'Other': 'other_expense',
+            };
+            const tx = new Transaction({
+                type: 'expense',
+                category: catMap[category] || 'other_expense',
+                amount: Number(amount),
+                paymentMethod: 'cash',
+                accountType: 'cash',
+                date: date || new Date(),
+                note: `[Expense] ${title}${description ? ': ' + description : ''}`,
+                sourceType: 'expense',
+                sourceId: expense._id,
+                recordedBy: { adminId: req.admin._id, adminName: req.admin.name },
+            });
+            await tx.save();
+            await updateAccountBalance('cash', Number(amount), 'expense');
+        } catch (txErr) {
+            console.error('⚠️ Failed to mirror expense as transaction:', txErr.message);
+        }
+
         res.status(201).json(expense);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
