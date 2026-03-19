@@ -101,9 +101,9 @@ export default function CheckoutModal({ product, onClose }) {
             />
 
             {/* Modal Card */}
-            <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className="relative w-full max-w-md max-h-[90dvh] rounded-3xl bg-white shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 fade-in duration-200">
                 {/* Header */}
-                <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-slate-100">
+                <div className="flex-shrink-0 flex items-center justify-between px-7 pt-7 pb-5 border-b border-slate-100">
                     <div>
                         {view === 'options' ? (
                             <>
@@ -132,7 +132,7 @@ export default function CheckoutModal({ product, onClose }) {
 
                 {/* Options and Form */}
                 {view === 'options' ? (
-                    <div className="p-7 space-y-3">
+                    <div className="p-7 space-y-3 overflow-y-auto">
                     {/* 1) Pay Online (PayHere) */}
                     <button
                         id="checkout-payhere-btn"
@@ -200,7 +200,7 @@ export default function CheckoutModal({ product, onClose }) {
                     </button>
                     </div>
                 ) : (
-                    <form onSubmit={submitWhatsAppOrder} className="p-7 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                    <form onSubmit={submitWhatsAppOrder} className="p-7 space-y-4 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                         <div>
                             <label className="block text-sm font-medium text-navy mb-1" htmlFor="wa-name">Name</label>
                             <input 

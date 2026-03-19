@@ -131,7 +131,7 @@ export default function CheckoutPage() {
                 <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4">
                     <a href="/" className="flex items-center gap-3">
                         <img src={logo} alt="OneFine" className="h-10 w-auto object-contain" />
-                        <div className="leading-tight">
+                        <div className="hidden sm:block leading-tight">
                             <div className="font-display text-lg tracking-[0.18em] text-navy">ONEFINE</div>
                             <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Checkout</p>
                         </div>
@@ -149,7 +149,7 @@ export default function CheckoutPage() {
                 <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
 
                     {/* ── Left: Form ──────────────────────────────────────── */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 order-2 lg:order-1">
                         <div>
                             <h1 className="font-display text-2xl text-navy">Complete Your Order</h1>
                             <p className="text-xs text-slate-500 mt-1">Fill in your delivery details below.</p>
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* ── Right: Order Summary ─────────────────────────────── */}
-                    <aside>
+                    <aside className="order-1 lg:order-2">
                         <div className="sticky top-24 space-y-4">
                             <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
                                 <h2 className="font-display text-lg text-navy mb-4">Order Summary</h2>

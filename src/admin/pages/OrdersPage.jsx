@@ -29,6 +29,7 @@ export default function OrdersPage() {
     const [updating, setUpdating] = useState(false);
     const [orderForm, setOrderForm] = useState(null); // { mode: 'create'|'edit', data: order }
     const [products, setProducts] = useState([]);
+    const [editingCustomer, setEditingCustomer] = useState(null); // holds { ...customer } while editing
 
     const fetchOrders = useCallback(async () => {
         setLoading(true);
@@ -77,6 +78,19 @@ export default function OrdersPage() {
             fetchOrders();
             setSelected(null);
         } catch (e) { alert(e.message); }
+    };
+
+    const saveCustomerDetails = async () => {
+        if (!editingCustomer || !selected) return;
+        try {
+            await apiFetch(`/biz/orders/${selected._id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ customer: editingCustomer }),
+            }, token);
+            setSelected(prev => ({ ...prev, customer: editingCustomer }));
+            setEditingCustomer(null);
+            fetchOrders();
+        } catch (e) { alert('Failed to update customer details: ' + e.message); }
     };
 
     const downloadPdf = (type, id) => window.open(apiUrl(`/pdf/${type}/${id}?token=${token}`), '_blank');
@@ -259,21 +273,87 @@ export default function OrdersPage() {
                             </div>
 
                             <div className="grid gap-8 grid-cols-2">
-                                <div>
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Client Details</h3>
-                                    <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4 shadow-sm">
-                                        <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Customer Name</p>
-                                            <p className="text-sm font-bold text-[#1B2A4A]">{selected.customer?.name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Phone / Email</p>
-                                            <p className="text-xs font-medium text-slate-600">{selected.customer?.phone} • {selected.customer?.email}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">Delivery Address</p>
-                                            <p className="text-xs font-medium text-slate-600 leading-relaxed">{selected.customer?.address}</p>
-                                        </div>
+                            <div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Client Details</h3>
+                                        {!editingCustomer ? (
+                                            <button
+                                                onClick={() => setEditingCustomer({ ...selected.customer })}
+                                                className="text-[10px] font-black text-[#C9A84C] uppercase tracking-widest hover:text-[#1B2A4A] transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <button onClick={saveCustomerDetails} className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:text-emerald-800">Save</button>
+                                                <span className="text-slate-300">|</span>
+                                                <button onClick={() => setEditingCustomer(null)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Cancel</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
+                                        {editingCustomer ? (
+                                            <>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Name</p>
+                                                        <input
+                                                            value={editingCustomer.name}
+                                                            onChange={e => setEditingCustomer(p => ({...p, name: e.target.value}))}
+                                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#1B2A4A] outline-none focus:border-[#C9A84C] transition-all"
+                                                            placeholder="Full name"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Phone</p>
+                                                        <input
+                                                            value={editingCustomer.phone}
+                                                            onChange={e => setEditingCustomer(p => ({...p, phone: e.target.value}))}
+                                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#1B2A4A] outline-none focus:border-[#C9A84C] transition-all"
+                                                            placeholder="Phone number"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Address</p>
+                                                        <textarea
+                                                            rows={2}
+                                                            value={editingCustomer.address}
+                                                            onChange={e => setEditingCustomer(p => ({...p, address: e.target.value}))}
+                                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#1B2A4A] outline-none focus:border-[#C9A84C] transition-all resize-none"
+                                                            placeholder="Street address"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Town</p>
+                                                        <input
+                                                            value={editingCustomer.city || ''}
+                                                            onChange={e => setEditingCustomer(p => ({...p, city: e.target.value}))}
+                                                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#1B2A4A] outline-none focus:border-[#C9A84C] transition-all"
+                                                            placeholder="Town / City"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Customer Name</p>
+                                                    <p className="text-sm font-bold text-[#1B2A4A]">{selected.customer?.name || <span className="text-amber-500 italic text-xs">Pending</span>}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Phone / Email</p>
+                                                    <p className="text-xs font-medium text-slate-600">{selected.customer?.phone || '—'} {selected.customer?.email ? `• ${selected.customer.email}` : ''}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Delivery Address</p>
+                                                    <p className="text-xs font-medium text-slate-600 leading-relaxed">{selected.customer?.address || '—'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Town</p>
+                                                    <p className="text-xs font-medium text-slate-600">{selected.customer?.city || <span className="text-amber-500 italic">Not set</span>}</p>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
@@ -476,8 +556,14 @@ function OrderFormModal({ mode, initialData, onClose, products, token, onSuccess
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Delivery Address / Destination</label>
-                                <textarea rows="4" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})}
-                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A] resize-none h-[116px]" />
+                                <textarea rows="3" value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})}
+                                    className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A] resize-none h-[90px]" />
+                                <div className="mt-4">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Town / City</label>
+                                    <input value={customer.city || ''} onChange={e => setCustomer({...customer, city: e.target.value})}
+                                        placeholder="e.g. Colombo"
+                                        className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/30 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
+                                </div>
                             </div>
                         </div>
                         <div className="mt-6">

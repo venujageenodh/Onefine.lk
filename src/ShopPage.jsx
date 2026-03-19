@@ -80,7 +80,7 @@ export default function ShopPage() {
           <div className="flex items-center justify-between py-4">
             <a href="/" className="flex items-center gap-3">
               <img src={logo} alt="OneFine logo" className="h-12 w-auto object-contain" />
-              <div className="leading-tight">
+              <div className="hidden sm:block leading-tight">
                 <div className="font-display text-xl tracking-[0.18em] text-navy">
                   ONEFINE
                 </div>

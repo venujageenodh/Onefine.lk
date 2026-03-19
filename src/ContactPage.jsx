@@ -83,7 +83,7 @@ export default function ContactPage() {
                     <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4">
                         <a href="/" className="flex items-center gap-3 group">
                             <img src={logo} alt="OneFine logo" className="h-12 w-auto object-contain transition-transform group-hover:scale-105" />
-                            <div className="leading-tight">
+                            <div className="hidden sm:block leading-tight">
                                 <div className="font-display text-xl tracking-[0.18em] text-navy">ONEFINE</div>
                                 <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Corporate Gifting Sri Lanka</p>
                             </div>

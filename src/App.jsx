@@ -96,7 +96,7 @@ export default function App() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4">
             <div className="flex items-center gap-3">
               <img src={logo} alt="OneFine logo" className="h-12 w-auto object-contain" />
-              <div className="leading-tight">
+              <div className="hidden sm:block leading-tight">
                 <div className="font-display text-xl tracking-[0.18em] text-navy">
                   ONEFINE
                 </div>
