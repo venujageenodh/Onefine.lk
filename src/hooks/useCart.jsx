@@ -47,24 +47,25 @@ export function CartProvider({ children }) {
     }, 0);
 
     // Build WhatsApp message for checkout
-    const buildWhatsAppMessage = useCallback(() => {
+    const buildWhatsAppMessage = useCallback((formData = { name: '', address: '', town: '', phone: '' }) => {
         if (items.length === 0) return '';
         const lines = items.map(
-            (i) => `📦 *Product:* ${i.name}\n💰 *Price:* ${i.price}\n🔢 *Quantity:* ${i.qty}` +
-                (i.id ? `\n🔗 *Link:* ${window.location.origin}/product/${i.id}` : '')
+            (i) => `📦 Product: ${i.name}\n💰 Price: ${i.price}\n🔢 Quantity: ${i.qty}` +
+                (i.id ? `\n🔗 Link: ${window.location.origin}/product/${i.id}` : '')
         );
         const productsText = lines.join('\n\n');
         
-        const msg = `🛍️ *NEW ORDER REQUEST - ONEFINE* 🛍️\n\n` +
+        const msg = `🛍️ NEW ORDER REQUEST - ONEFINE 🛍️\n\n` +
             `Hello! I'm interested in purchasing ${items.length === 1 ? 'this item' : 'these items'}:\n\n` +
             `${productsText}\n\n` +
-            `🛒 *Total Price:* Rs. ${totalPrice.toLocaleString('en-LK')}\n\n` +
-            `*📍 My Delivery Details:*\n` +
-            `👤 Name: \n` +
-            `🏠 Address: \n` +
-            `📱 Phone: \n` +
+            `🛒 Total Price: Rs. ${totalPrice.toLocaleString('en-LK')}\n\n` +
+            `📍 My Delivery Details:\n` +
+            `👤 Name: ${formData.name}\n` +
+            `🏠 Address: ${formData.address}\n` +
+            `🏙️ Town: ${formData.town}\n` +
+            `📱 Phone: ${formData.phone}\n` +
             `\n` +
-            `_Please let me know the next steps to confirm my order!_ ✨`;
+            `Please let me know the next steps to confirm my order! ✨`;
 
         return `https://wa.me/94768121701?text=${encodeURIComponent(msg)}`;
     }, [items, totalPrice]);

@@ -206,7 +206,7 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                                        City *
+                                        Town *
                                     </label>
                                     <input
                                         type="text"
@@ -214,7 +214,7 @@ export default function CheckoutPage() {
                                         required
                                         value={form.city}
                                         onChange={handleChange}
-                                        placeholder="City"
+                                        placeholder="Town"
                                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-navy outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all"
                                     />
                                 </div>

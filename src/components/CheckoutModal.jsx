@@ -1,10 +1,10 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { HiX, HiCreditCard, HiCash } from 'react-icons/hi';
 
 export default function CheckoutModal({ product, onClose }) {
     const [view, setView] = useState('options');
-    const [formData, setFormData] = useState({ name: '', address: '', phone: '' });
+    const [formData, setFormData] = useState({ name: '', address: '', town: '', phone: '' });
     const [submitting, setSubmitting] = useState(false);
 
     if (!product) return null;
@@ -24,19 +24,20 @@ export default function CheckoutModal({ product, onClose }) {
 
         const productUrl = product._id ? `${window.location.origin}/product/${product._id}` : window.location.origin;
 
-        const msg = `🛍️ *NEW ORDER REQUEST - ONEFINE* 🛍️\n\n` +
+        const msg = `🛍️ NEW ORDER REQUEST - ONEFINE 🛍️\n\n` +
             `Hello! I'm interested in purchasing this item:\n\n` +
-            `📦 *Product:* ${product.name}\n` +
-            `💰 *Price:* ${product.price}\n` +
-            `🔢 *Quantity:* 1\n` +
-            (product._id ? `🔗 *Link:* ${productUrl}\n` : '') +
+            `📦 Product: ${product.name}\n` +
+            `💰 Price: ${product.price}\n` +
+            `🔢 Quantity: 1\n` +
+            (product._id ? `🔗 Link: ${productUrl}\n` : '') +
             `\n` +
-            `*📍 My Delivery Details:*\n` +
+            `📍 My Delivery Details:\n` +
             `👤 Name: ${formData.name}\n` +
             `🏠 Address: ${formData.address}\n` +
+            `🏙️ Town: ${formData.town}\n` +
             `📱 Phone: ${formData.phone}\n` +
             `\n` +
-            `_Please let me know the next steps to confirm my order!_ ✨`;
+            `Please let me know the next steps to confirm my order! ✨`;
 
         // Save order to backend (silent — WhatsApp opens regardless)
         try {
@@ -51,16 +52,18 @@ export default function CheckoutModal({ product, onClose }) {
                         name: formData.name,
                         phone: formData.phone,
                         address: formData.address,
-                        city: '',
+                        city: formData.town,
                     },
                     items: [{
                         productId: product._id || null,
                         name: product.name,
-                        unitPrice: 0,
+                        unitPrice: Number(String(product.price).replace(/[^0-9]/g, '')) || 0,
                         qty: 1,
                         image: product.image || '',
                     }],
+                    subtotal: Number(String(product.price).replace(/[^0-9]/g, '')) || 0,
                     deliveryCharge: 0,
+                    total: Number(String(product.price).replace(/[^0-9]/g, '')) || 0,
                     notes: `WhatsApp order — price: ${product.price}`,
                 }),
             });
@@ -218,8 +221,20 @@ export default function CheckoutModal({ product, onClose }) {
                                 value={formData.address} 
                                 onChange={(e) => setFormData({...formData, address: e.target.value})}
                                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy resize-none"
-                                placeholder="Your delivery address"
+                                placeholder="House No, Street, Area"
                                 rows="2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-navy mb-1" htmlFor="wa-town">Town</label>
+                            <input 
+                                id="wa-town"
+                                type="text" 
+                                required 
+                                value={formData.town} 
+                                onChange={(e) => setFormData({...formData, town: e.target.value})}
+                                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy"
+                                placeholder="Your town"
                             />
                         </div>
                         <div>
