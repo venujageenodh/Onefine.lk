@@ -8,6 +8,7 @@ import AboutUsPage from './AboutUsPage.jsx';
 import ContactPage from './ContactPage.jsx';
 import CheckoutPage from './CheckoutPage.jsx';
 import OrderConfirmationPage from './OrderConfirmationPage.jsx';
+import PaperBagsPage from './PaperBagsPage.jsx';
 import AdminApp from './admin/AdminApp.jsx';
 import { AdminAuthProvider } from './admin/AdminAuthContext.jsx';
 import { CartProvider } from './hooks/useCart.jsx';
@@ -40,6 +41,8 @@ if (path.startsWith('/biz-admin')) {
   RootComponent = CheckoutPage;
 } else if (path.includes('/order-confirmation')) {
   RootComponent = OrderConfirmationPage;
+} else if (path.includes('/paperbags')) {
+  RootComponent = PaperBagsPage;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
