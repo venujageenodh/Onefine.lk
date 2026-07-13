@@ -27,7 +27,7 @@ const PAPER_BAG_PRODUCTS = [
     category: "paper",
     name: "White Paper Bags",
     dimensions: "6 X 4.5 X 2.5 inch",
-    price: "Rs. 17.00",
+    price: "Rs. 45.00",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4403.PNG?raw=true",
     inStock: true,
@@ -37,7 +37,7 @@ const PAPER_BAG_PRODUCTS = [
     category: "paper",
     name: "White Paper Bags",
     dimensions: "8.5 X 6 X 2.75 inch",
-    price: "Rs. 19.00",
+    price: "Rs. 55.00",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4404.PNG?raw=true",
     inStock: true,
@@ -47,7 +47,7 @@ const PAPER_BAG_PRODUCTS = [
     category: "paper",
     name: "White Paper Bags",
     dimensions: "12 X 7.5 X 3 inch",
-    price: "Rs. 25.00",
+    price: "Rs. 65.00",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4406.PNG?raw=true",
     inStock: true,
