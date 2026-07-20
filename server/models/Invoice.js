@@ -59,7 +59,7 @@ invoiceSchema.pre('save', async function () {
     // Update payment status
     if (this.amountPaid <= 0) this.paymentStatus = 'UNPAID';
     else if (this.amountPaid >= this.total) this.paymentStatus = 'PAID';
-    else this.paymentStatus = 'PART_PAID';
+    else this.paymentStatus = 'PARTIALLY_PAID';
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

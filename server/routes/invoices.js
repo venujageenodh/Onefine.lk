@@ -23,12 +23,12 @@ router.get('/', requireAdminAuth, requirePermission('invoices.view'), async (req
 // POST /api/invoices — create standalone invoice
 router.post('/', requireAdminAuth, requirePermission('invoices.view'), async (req, res) => {
     try {
-        const { customer, items, discountAmount = 0, deliveryCharge = 0, tax = 0, notes, dueDate, orderId } = req.body;
+        const { customer, items, discountAmount = 0, deliveryCharge = 0, tax = 0, notes, dueDate, orderId, description } = req.body;
         const subtotal = items.reduce((s, i) => {
             const l = i.unitPrice * i.qty;
             return s + l - l * (i.discount || 0) / 100;
         }, 0);
-        const taxAmount = (subtotal - discountAmount) * tax / 100;
+        const taxAmount = (subtotal - Number(discountAmount)) * Number(tax) / 100;
         const total = subtotal - Number(discountAmount) + taxAmount + Number(deliveryCharge);
 
         const invoice = await Invoice.create({
@@ -37,6 +37,7 @@ router.post('/', requireAdminAuth, requirePermission('invoices.view'), async (re
             deliveryCharge: Number(deliveryCharge),
             tax: Number(tax), taxAmount, total,
             notes, dueDate: dueDate || undefined, orderId,
+            description: description || '',
             createdBy: req.admin._id || null,
         });
         res.status(201).json(invoice);
@@ -50,6 +51,52 @@ router.get('/:id', requireAdminAuth, requirePermission('invoices.view'), async (
         if (!invoice) return res.status(404).json({ error: 'Not found' });
         const payments = await Payment.find({ invoiceId: req.params.id }).sort({ date: -1 });
         res.json({ invoice, payments });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PUT /api/invoices/:id — update existing invoice
+router.put('/:id', requireAdminAuth, requirePermission('invoices.view'), async (req, res) => {
+    try {
+        const { customer, items, discountAmount = 0, deliveryCharge = 0, tax = 0, notes, dueDate, description } = req.body;
+        const invoice = await Invoice.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+        const subtotal = items.reduce((s, i) => {
+            const l = i.unitPrice * i.qty;
+            return s + l - l * (i.discount || 0) / 100;
+        }, 0);
+        const taxAmount = (subtotal - Number(discountAmount)) * Number(tax) / 100;
+        const total = subtotal - Number(discountAmount) + taxAmount + Number(deliveryCharge);
+
+        invoice.customer = customer;
+        invoice.items = items;
+        invoice.subtotal = subtotal;
+        invoice.discountAmount = Number(discountAmount);
+        invoice.deliveryCharge = Number(deliveryCharge);
+        invoice.tax = Number(tax);
+        invoice.taxAmount = taxAmount;
+        invoice.total = total;
+        invoice.notes = notes;
+        invoice.dueDate = dueDate || undefined;
+        invoice.description = description || '';
+
+        await invoice.save(); // pre-save hook updates paymentStatus and balanceDue
+
+        res.json(invoice);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/invoices/:id — delete/void invoice
+router.delete('/:id', requireAdminAuth, requirePermission('invoices.view'), async (req, res) => {
+    try {
+        const invoice = await Invoice.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+        // Delete all associated payments
+        await Payment.deleteMany({ invoiceId: invoice._id });
+        await Invoice.findByIdAndDelete(req.params.id);
+
+        res.json({ message: 'Invoice and associated payments deleted successfully' });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

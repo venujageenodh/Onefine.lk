@@ -41,7 +41,7 @@ function buildHeader(doc, title, number, date) {
 }
 
 function checkPageBreak(doc, heightNeeded, headerData = null) {
-    if (doc.y + heightNeeded > doc.page.height - 100) {
+    if (doc.y + heightNeeded > doc.page.height - 40) {
         doc.addPage();
         if (headerData) {
             buildHeader(doc, headerData.title, headerData.number, headerData.date);
@@ -128,9 +128,7 @@ function buildItemsTable(doc, items, headerData) {
     doc.y = y + 32;
 
     items.forEach((item, i) => {
-        const isLastItem = i === items.length - 1;
-        // Estimated height for one item line plus totals box and footer if it's the last item
-        const heightNeeded = isLastItem ? 450 : 60;
+        const heightNeeded = 60; // Estimated height for one item line
         checkPageBreak(doc, heightNeeded, headerData);
         
         const currentY = doc.y;
@@ -168,6 +166,8 @@ function buildItemsTable(doc, items, headerData) {
         doc.y = Math.max(maxY, currentY + 20) + 10;
         doc.moveTo(40, doc.y - 5).lineTo(doc.page.width - 40, doc.y - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
     });
+
+    if (headerData) delete headerData.tableCols;
 }
 
 
@@ -187,9 +187,7 @@ function buildDeliveryItemsTable(doc, items, headerData) {
     doc.y = y + 32;
 
     items.forEach((item, i) => {
-        const isLastItem = i === items.length - 1;
-        // Delivery note has a smaller footer (signature only)
-        const heightNeeded = isLastItem ? 250 : 50;
+        const heightNeeded = 50; // Delivery note line height
         checkPageBreak(doc, heightNeeded, headerData);
         const currentY = doc.y;
 
@@ -208,10 +206,19 @@ function buildDeliveryItemsTable(doc, items, headerData) {
         doc.y = Math.max(maxY, currentY + 20) + 10;
         doc.moveTo(40, doc.y - 5).lineTo(doc.page.width - 40, doc.y - 5).strokeColor('#EEE').lineWidth(0.5).stroke();
     });
-}
 
+    if (headerData) delete headerData.tableCols;
+}function buildTotalsBox(doc, data, headerData) {
+    let rows = 2; // SUB TOTAL, TOTAL
+    if (data.discountAmount > 0) rows++;
+    if (data.deliveryCharge > 0) rows++;
+    if (data.taxAmount > 0) rows++;
+    if (data.balanceDue !== undefined && (data.amountPaid || 0) > 0) rows += 2; // PAID, BALANCE DUE
 
-function buildTotalsBox(doc, data, balanceOnly = false) {
+    if (headerData) {
+        checkPageBreak(doc, rows * 22 + 40, headerData);
+    }
+
     const x = doc.page.width - 260;
     let y = doc.y + 5;
 
@@ -230,10 +237,18 @@ function buildTotalsBox(doc, data, balanceOnly = false) {
     };
 
     addRow('SUB TOTAL', formatLKR(data.subtotal));
-    if (data.discountAmount > 0) addRow('DISCOUNT', `- ${formatLKR(data.discountAmount)}`);
+    if (data.discountAmount > 0) {
+        addRow('DISCOUNT', `- ${formatLKR(data.discountAmount)}`);
+    }
+    if (data.deliveryCharge > 0) {
+        addRow('DELIVERY', formatLKR(data.deliveryCharge));
+    }
+    if (data.taxAmount > 0) {
+        addRow(`TAX (${data.tax}%)`, formatLKR(data.taxAmount));
+    }
     addRow('TOTAL', formatLKR(data.total), true);
 
-    if (data.balanceDue !== undefined) {
+    if (data.balanceDue !== undefined && (data.amountPaid || 0) > 0) {
         addRow('PAID', `- ${formatLKR(data.amountPaid || 0)}`);
         addRow('BALANCE DUE', formatLKR(data.balanceDue), true, true);
     }
@@ -242,12 +257,12 @@ function buildTotalsBox(doc, data, balanceOnly = false) {
 }
 
 function buildFooter(doc, headerData, showPayment = true) {
-    // Check if we have enough space for the entire footer block (approx 180-200 units)
+    // Check if we have enough space for the entire footer block (approx 150 units)
     // If not, moving to next page is safer than splitting
-    checkPageBreak(doc, 200, headerData);
+    checkPageBreak(doc, 150, headerData);
     
     // Position at the bottom if possible, otherwise just stay where we are
-    const footerHeight = 200;
+    const footerHeight = 150;
     const bottomY = doc.page.height - footerHeight - 40;
     if (doc.y < bottomY) {
         doc.y = bottomY;
@@ -302,7 +317,7 @@ router.get('/quotation/:id', requireAdminAuth, async (req, res) => {
 
         buildItemsTable(doc, quotation.items, headerData);
         
-        buildTotalsBox(doc, quotation);
+        buildTotalsBox(doc, quotation, headerData);
 
         if (quotation.notes) {
             // Check if notes fit, otherwise move to next page with header
@@ -343,7 +358,7 @@ router.get('/proforma/:id', requireAdminAuth, async (req, res) => {
 
         buildItemsTable(doc, order.items, headerData);
         
-        buildTotalsBox(doc, order);
+        buildTotalsBox(doc, order, headerData);
 
         if (order.notes) {
             checkPageBreak(doc, 80, headerData);
@@ -467,6 +482,44 @@ router.get('/receipt/:id', requireAdminAuth, async (req, res) => {
         doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(10).text('For, ONE FINE', 0, sigY, { align: 'right', width: doc.page.width - 40 });
         doc.moveTo(doc.page.width - 160, sigY + 35).lineTo(doc.page.width - 40, sigY + 35).strokeColor('#000').stroke();
         doc.font('Helvetica').fontSize(7).text('AUTHORIZED SIGNATURE', doc.page.width - 160, sigY + 40, { width: 120, align: 'center' });
+
+        doc.end();
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// GET /api/pdf/invoice/:id
+router.get('/invoice/:id', requireAdminAuth, async (req, res) => {
+    try {
+        const invoice = await Invoice.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ error: 'Not found' });
+
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Invoice-${invoice.invoiceNumber}.pdf"`);
+        doc.pipe(res);
+
+        const dateStr = new Date(invoice.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-');
+        const headerData = { title: 'INVOICE', number: invoice.invoiceNumber, date: dateStr };
+        
+        buildHeader(doc, 'INVOICE', invoice.invoiceNumber, dateStr);
+        buildCustomerBox(doc, invoice.customer, invoice.invoiceNumber, dateStr, 'Invoice');
+        
+        if (invoice.description) {
+            doc.moveDown();
+            doc.fillColor('#1B2A4A').font('Helvetica-Bold').fontSize(12).text(cleanText(invoice.description).toUpperCase(), 40);
+            doc.y += 10;
+        }
+
+        buildItemsTable(doc, invoice.items, headerData);
+        
+        buildTotalsBox(doc, invoice, headerData);
+
+        if (invoice.notes) {
+            checkPageBreak(doc, 80, headerData);
+            doc.fillColor('#555').fontSize(9).font('Helvetica-Bold').text('Notes:')
+                .font('Helvetica').text(cleanText(invoice.notes));
+        }
+        buildFooter(doc, headerData, true);
 
         doc.end();
     } catch (err) { res.status(500).json({ error: err.message }); }

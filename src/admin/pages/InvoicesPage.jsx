@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch, formatLKR, formatDate, StatusBadge, apiUrl, formatDateTime } from '../utils';
 import { useAdminAuth } from '../AdminAuthContext';
+import { useProducts } from '../../hooks/useProducts';
 import { 
     HiDotsVertical, HiDownload, HiPrinter, HiPlus, 
     HiChevronLeft, HiCurrencyDollar, HiClock, HiCheckCircle,
-    HiShieldCheck, HiOutlineDocumentText, HiSearch
+    HiShieldCheck, HiOutlineDocumentText, HiSearch, HiTrash, HiFilter, HiXCircle
 } from 'react-icons/hi';
 
 function SectionHeader({ title, subtitle, action }) {
@@ -21,7 +22,14 @@ function SectionHeader({ title, subtitle, action }) {
 
 const PAYMENT_STAGES = ['UNPAID', 'PARTIALLY_PAID', 'PAID'];
 
+function extractNumeric(formatted) {
+    return formatted ? Number(formatted.toString().replace(/[^\d]/g, '')) : 0;
+}
+
 function InvoiceForm({ onSave, token, initialData = null }) {
+    const { products } = useProducts();
+    const [customers, setCustomers] = useState([]);
+    
     const [customer, setCustomer] = useState(initialData?.customer || { name: '', phone: '', email: '', address: '', company: '' });
     const [items, setItems] = useState(initialData?.items || [{ name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const [extra, setExtra] = useState({
@@ -34,9 +42,56 @@ function InvoiceForm({ onSave, token, initialData = null }) {
     });
     const [saving, setSaving] = useState(false);
 
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const data = await apiFetch('/customers?limit=100', {}, token);
+                setCustomers(data.customers || []);
+            } catch (e) {
+                console.error('Error fetching customers:', e);
+            }
+        };
+        if (token) fetchCustomers();
+    }, [token]);
+
+    const handleCustomerNameChange = (e) => {
+        const val = e.target.value;
+        setCustomer(prev => {
+            const next = { ...prev, name: val };
+            const found = customers.find(c => c.name.toLowerCase() === val.toLowerCase());
+            if (found) {
+                next.phone = found.phone || '';
+                next.email = found.email || '';
+                next.company = found.company || '';
+                next.address = found.address || '';
+            }
+            return next;
+        });
+    };
+
     const addItem = () => setItems(i => [...i, { name: '', description: '', qty: 1, unitPrice: 0, discount: 0 }]);
     const removeItem = (idx) => setItems(i => i.filter((_, j) => j !== idx));
-    const updateItem = (idx, field, val) => setItems(i => i.map((item, j) => j === idx ? { ...item, [field]: val } : item));
+    const updateItem = (idx, field, val) => {
+        setItems(prevItems => {
+            const newItems = [...prevItems];
+            let value = val;
+
+            if (field === 'discount' && val !== '') {
+                const num = Number(val);
+                if (num > 100) value = 100;
+            }
+
+            newItems[idx] = { ...newItems[idx], [field]: value };
+            
+            if (field === 'name') {
+                const foundProduct = products.find(p => p.name.toLowerCase() === val.toLowerCase());
+                if (foundProduct) {
+                    newItems[idx].unitPrice = extractNumeric(foundProduct.price) || 0;
+                }
+            }
+            return newItems;
+        });
+    };
 
     const subtotal = items.reduce((s, i) => s + Number(i.qty) * Number(i.unitPrice) * (1 - (Number(i.discount) || 0) / 100), 0);
     const taxAmount = (subtotal - Number(extra.discountAmount)) * (Number(extra.tax) / 100);
@@ -48,8 +103,11 @@ function InvoiceForm({ onSave, token, initialData = null }) {
 
         setSaving(true);
         try {
-            await apiFetch('/invoices', {
-                method: 'POST', body: JSON.stringify({
+            const url = initialData?._id ? `/invoices/${initialData._id}` : '/invoices';
+            const method = initialData?._id ? 'PUT' : 'POST';
+
+            await apiFetch(url, {
+                method, body: JSON.stringify({
                     customer, 
                     items: items.map(i => ({ 
                         ...i, 
@@ -70,6 +128,18 @@ function InvoiceForm({ onSave, token, initialData = null }) {
 
     return (
         <form onSubmit={submit} className="space-y-12">
+            <datalist id="customers-list">
+                {customers.map(c => (
+                    <option key={c._id} value={c.name} />
+                ))}
+            </datalist>
+            
+            <datalist id="products-list">
+                {products?.map(p => (
+                    <option key={p._id} value={p.name} />
+                ))}
+            </datalist>
+
             {/* Customer Section */}
             <section className="space-y-6">
                 <SectionHeader title="Entity Credentials" subtitle="Bill-To Legal & Contact" />
@@ -77,7 +147,7 @@ function InvoiceForm({ onSave, token, initialData = null }) {
                     <div className="space-y-4">
                         <div className="relative group">
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Customer Full Name *</label>
-                            <input required value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})}
+                            <input required value={customer.name} onChange={handleCustomerNameChange} list="customers-list"
                                 className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm outline-none focus:border-[#C9A84C] bg-slate-50/50 focus:bg-white transition-all font-bold text-[#1B2A4A]" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -142,7 +212,7 @@ function InvoiceForm({ onSave, token, initialData = null }) {
                             return (
                                 <div key={idx} className="flex flex-col md:grid md:grid-cols-[1fr_80px_120px_100px_120px_40px] gap-4 items-center bg-white p-4 rounded-3xl shadow-sm border border-slate-50 group hover:border-[#C9A84C]/30 transition-all">
                                     <div className="w-full space-y-2">
-                                        <input placeholder="e.g. Standard Service Unit" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required
+                                        <input placeholder="e.g. Standard Service Unit" value={item.name} onChange={e => updateItem(idx, 'name', e.target.value)} required list="products-list"
                                             className="w-full rounded-xl border border-slate-100 px-4 py-2.5 text-xs outline-none focus:border-[#C9A84C] bg-slate-50 transition-all font-bold text-[#1B2A4A]" />
                                         <input placeholder="Item Description / Specifics" value={item.description} onChange={e => updateItem(idx, 'description', e.target.value)}
                                             className="w-full rounded-lg border border-transparent bg-slate-50/30 px-4 py-1.5 text-[10px] outline-none focus:bg-white focus:border-slate-100 transition-all" />
@@ -234,7 +304,7 @@ function InvoiceForm({ onSave, token, initialData = null }) {
                 {saving ? (
                     <div className="w-4 h-4 rounded-full border-2 border-[#C9A84C] border-t-transparent animate-spin" />
                 ) : null}
-                {saving ? 'Synchronizing Pipeline...' : 'Authorize & Generate Invoice'}
+                {saving ? 'Synchronizing Pipeline...' : initialData?._id ? 'Authorize & Update Invoice' : 'Authorize & Generate Invoice'}
             </button>
         </form>
     );
@@ -245,21 +315,31 @@ export default function InvoicesPage() {
     const [invoices, setInvoices] = useState([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState('list'); // list | new
+    const [view, setView] = useState('list'); // list | new | edit
     const [selected, setSelected] = useState(null);
     const [detail, setDetail] = useState(null);
     const [payForm, setPayForm] = useState({ amount: '', method: 'BANK', reference: '', notes: '' });
     const [paying, setPaying] = useState(false);
+    
+    // Filters
+    const [filters, setFilters] = useState({ paymentStatus: '', q: '' });
 
     const fetchInvoices = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await apiFetch('/invoices', {}, token);
-            setInvoices(data.invoices || []); setTotal(data.total || 0);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-    }, [token]);
+            const queryParams = new URLSearchParams();
+            if (filters.paymentStatus) queryParams.append('paymentStatus', filters.paymentStatus);
+            if (filters.q) queryParams.append('q', filters.q);
 
-    useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+            const data = await apiFetch(`/invoices?${queryParams.toString()}`, {}, token);
+            setInvoices(data.invoices || []); 
+            setTotal(data.total || 0);
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+    }, [token, filters]);
+
+    useEffect(() => {
+        fetchInvoices();
+    }, [fetchInvoices]);
 
     const openDetail = async (inv) => {
         setSelected(inv);
@@ -281,16 +361,25 @@ export default function InvoicesPage() {
         } catch (e) { alert(e.message); } finally { setPaying(false); }
     };
 
+    const deleteInvoice = async (id) => {
+        if (!confirm('Are you sure you want to delete/void this invoice and all its payment history? This action cannot be undone.')) return;
+        try {
+            await apiFetch(`/invoices/${id}`, { method: 'DELETE' }, token);
+            setSelected(null);
+            fetchInvoices();
+        } catch (e) { alert(e.message); }
+    };
+
     const downloadPdf = (id) => window.open(apiUrl(`/pdf/invoice/${id}?token=${token}`), '_blank');
 
-    if (view === 'new') return (
-        <div className="max-w-2xl mx-auto">
+    if (view === 'new' || view === 'edit') return (
+        <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
-                <button onClick={() => setView('list')} className="text-slate-400 hover:text-[#1B2A4A]">← Back</button>
-                <h2 className="font-bold text-[#1B2A4A] text-lg">New Standalone Invoice</h2>
+                <button onClick={() => { setView('list'); setSelected(null); }} className="text-slate-400 hover:text-[#1B2A4A] flex items-center gap-1 font-bold text-sm">← Back</button>
+                <h2 className="font-bold text-[#1B2A4A] text-lg">{view === 'new' ? 'New Standalone Invoice' : `Edit Invoice ${selected?.invoiceNumber}`}</h2>
             </div>
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                <InvoiceForm token={token} onSave={() => { setView('list'); fetchInvoices(); }} />
+                <InvoiceForm token={token} initialData={view === 'edit' ? selected : null} onSave={() => { setView('list'); setSelected(null); fetchInvoices(); }} />
             </div>
         </div>
     );
@@ -309,7 +398,7 @@ export default function InvoicesPage() {
             />
 
             {/* Quick Summary Dashboard */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
                 {[
                     { label: 'Total Receivables', value: total, icon: HiOutlineDocumentText, color: 'navy' },
                     { label: 'Pending Settlement', value: invoices.filter(i => i.paymentStatus !== 'PAID').length, icon: HiClock, color: 'gold' },
@@ -326,6 +415,36 @@ export default function InvoicesPage() {
                         </div>
                     </div>
                 ))}
+            </div>
+
+            {/* Filter Bar */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <div className="relative flex-1 group">
+                        <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#C9A84C] transition-colors" />
+                        <input placeholder="Find customer name, invoice #, subject..." value={filters.q}
+                            onChange={e => setFilters(f => ({ ...f, q: e.target.value }))}
+                            className="w-full rounded-2xl border border-slate-200 pl-11 pr-4 py-3.5 text-sm outline-none focus:border-[#C9A84C] transition-all bg-slate-50/50 focus:bg-white" />
+                    </div>
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-48">
+                            <HiFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <select value={filters.paymentStatus} onChange={e => setFilters(f => ({ ...f, paymentStatus: e.target.value }))}
+                                className="w-full rounded-2xl border border-slate-200 pl-11 pr-8 py-3.5 text-sm outline-none focus:border-[#C9A84C] transition-all bg-slate-50/50 focus:bg-white appearance-none cursor-pointer font-bold text-[#1B2A4A]">
+                                <option value="">All Payments</option>
+                                <option value="UNPAID">Unpaid</option>
+                                <option value="PARTIALLY_PAID">Partially Paid</option>
+                                <option value="PAID">Fully Paid</option>
+                            </select>
+                        </div>
+                        {(filters.q || filters.paymentStatus) && (
+                            <button onClick={() => setFilters({ q: '', paymentStatus: '' })}
+                                className="flex items-center justify-center bg-red-50 text-red-500 rounded-2xl px-4 py-3.5 text-sm font-bold hover:bg-red-100 transition-colors">
+                                <HiXCircle className="text-lg mr-1" /> Reset
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Desktop Table View */}
@@ -357,7 +476,10 @@ export default function InvoicesPage() {
                                             {inv.invoiceNumber}
                                         </span>
                                     </td>
-                                    <td className="px-8 py-6 font-bold text-[#1B2A4A]">{inv.customer?.name}</td>
+                                    <td className="px-8 py-6">
+                                        <p className="font-bold text-[#1B2A4A]">{inv.customer?.name}</p>
+                                        {inv.description && <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">{inv.description}</p>}
+                                    </td>
                                     <td className="px-8 py-6 text-right font-black text-[#1B2A4A]">{formatLKR(inv.total)}</td>
                                     <td className="px-8 py-6 text-right">
                                         <p className="font-black text-green-600">{formatLKR(inv.amountPaid)}</p>
@@ -378,6 +500,9 @@ export default function InvoicesPage() {
                                     </td>
                                 </tr>
                             ))}
+                            {!loading && invoices.length === 0 && (
+                                <tr><td colSpan={6} className="py-12 text-center text-slate-400 italic text-xs">No matching invoices found</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -398,7 +523,8 @@ export default function InvoicesPage() {
                         </div>
                         <div>
                             <p className="text-xs font-black text-[#1B2A4A]">{inv.customer?.name}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{formatDate(inv.createdAt)}</p>
+                            {inv.description && <p className="text-[10px] text-slate-400 truncate mt-0.5">{inv.description}</p>}
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{formatDate(inv.createdAt)}</p>
                         </div>
                         <div className="flex items-end justify-between pt-2 border-t border-slate-50">
                             <div>
@@ -556,6 +682,12 @@ export default function InvoicesPage() {
                         <div className="px-8 py-8 border-t border-slate-50 flex gap-4">
                             <button onClick={() => downloadPdf(selected._id)} className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 py-4 text-[10px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-200 transition-all">
                                 <HiPrinter className="text-lg" /> Print Full Invoice
+                            </button>
+                            <button onClick={() => { setView('edit'); setSelected(selected); }} className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-indigo-50 py-4 text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-indigo-100 transition-all">
+                                <HiOutlineDocumentText className="text-lg" /> Edit Invoice
+                            </button>
+                            <button onClick={() => deleteInvoice(selected._id)} className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-red-50 py-4 text-[10px] font-black text-red-600 uppercase tracking-widest hover:bg-red-100 transition-all">
+                                <HiTrash className="text-lg" /> Void/Delete
                             </button>
                         </div>
                     </div>
