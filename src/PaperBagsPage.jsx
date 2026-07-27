@@ -55,12 +55,12 @@ const PAPER_BAG_PRODUCTS = [
   {
     id: "pb-carrier-4",
     category: "paper",
-    name: "-",
-    dimensions: "-",
-    price: "-",
+    name: "White Paper Bags",
+    dimensions: "12 X 5 X 4 inch",
+    price: "75",
     originalPrice: "-",
     image:
-      "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4407.PNG?raw=true",
+      "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4406.PNG?raw=true",
     inStock: false,
     onSale: false,
   },
@@ -72,7 +72,7 @@ const PAPER_BAG_PRODUCTS = [
     price: "Rs. 17.00",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4394.PNG?raw=true",
-    inStock: true,
+    inStock: false,
   },
   {
     id: "pb-carrier-2",
@@ -82,7 +82,7 @@ const PAPER_BAG_PRODUCTS = [
     price: "Rs. 19.00",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4398.PNG?raw=true",
-    inStock: true,
+    inStock: false,
   },
   {
     id: "pb-carrier-3",
@@ -92,7 +92,7 @@ const PAPER_BAG_PRODUCTS = [
     price: "Rs. 25.00",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4399.PNG?raw=true",
-    inStock: true,
+    inStock: false,
   },
   {
     id: "pb-carrier-4",
@@ -537,7 +537,7 @@ export default function PaperBagsPage() {
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1.5 mb-1">
                       <span className="text-3xl sm:text-4xl font-display font-semibold text-navy">
-                        Rs. 3,500
+                        Rs. 3,000
                       </span>
                     </div>
                     <p className="text-sm text-slate-400">
@@ -608,7 +608,7 @@ export default function PaperBagsPage() {
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1.5 mb-1">
                       <span className="text-3xl sm:text-4xl font-display font-semibold text-white">
-                        Rs. 7,000
+                        Rs. 5,000
                       </span>
                     </div>
                     <p className="text-sm text-slate-400">
@@ -669,7 +669,7 @@ export default function PaperBagsPage() {
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1.5 mb-1">
                       <span className="text-3xl sm:text-4xl font-display font-semibold text-navy">
-                        Rs. 10,000
+                        Rs. 7,000
                       </span>
                     </div>
                     <p className="text-sm text-slate-400">
