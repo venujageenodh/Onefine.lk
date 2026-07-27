@@ -57,11 +57,11 @@ const PAPER_BAG_PRODUCTS = [
     category: "paper",
     name: "White Paper Bags",
     dimensions: "12 X 5 X 4 inch",
-    price: "75",
+    price: "Rs. 75.00",
     originalPrice: "-",
     image:
       "https://github.com/venujageenodh/Onefine.lk/blob/main/src/assets/IMG_4406.PNG?raw=true",
-    inStock: false,
+    inStock: true,
     onSale: false,
   },
   {
